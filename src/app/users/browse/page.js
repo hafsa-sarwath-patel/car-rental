@@ -31,7 +31,7 @@ export default function BrowseCars() {
           <div
             key={car.name}
             style={{
-              background: "#232946",
+              background: "#bfb7b7ff",
               borderRadius: 12,
               boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
               padding: 20,
@@ -72,3 +72,6 @@ export default function BrowseCars() {
           </div>
         ))}
       </div>
+    </div>
+  );  
+}
