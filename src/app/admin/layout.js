@@ -4,6 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
+import "primereact/resources/themes/lara-light-blue/theme.css"; // Theme (can be any)
+import "primereact/resources/primereact.min.css"; // PrimeReact core styles
+import "primeicons/primeicons.css";//layout.js
+ 
 
 export default function AdminLayout({ children }) {
   const [visible, setVisible] = useState(false);
@@ -76,6 +80,13 @@ export default function AdminLayout({ children }) {
               onClick={() => navigateTo("/admin/bookings")}
               />
 </li>
+ <li>
+            <Button
+              label="states"
+              className="p-button-text"
+              onClick={() => navigateTo("/admin/states")}
+            />
+          </li>
    <li>
             <Button label="Settings"
              className="p-button-text"
@@ -89,4 +100,4 @@ export default function AdminLayout({ children }) {
       <main style={{ padding: "2rem" }}>{children}</main>
     </div>
   );
-}
+}                                    

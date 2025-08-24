@@ -1,28 +1,84 @@
 "use client";
-import { cars } from "./data";
+import { useState } from "react";
+import { cars as initialCars } from "./data";
+import { Sidebar } from "primereact/sidebar";
+import { Button } from "primereact/button";
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 
 export default function AdminCarsPage() {
+  const [cars, setCars] = useState(initialCars);
+  const [editVisible, setEditVisible] = useState(false);
+  const [editCar, setEditCar] = useState(null);
+
+  // Edit existing car
+  const handleEdit = (car) => {
+    setEditCar(car);
+    setEditVisible(true);
+  };
+
+  // Add new car
+  const handleAddNew = () => {
+    setEditCar({ id: null, name: "", model: "", price: "" });
+    setEditVisible(true);
+  };
+
+  // Save car (new or existing)
+  const handleSave = (e) => {
+    e.preventDefault();
+
+    if (editCar.id) {
+      // Update existing car
+      setCars((prev) =>
+        prev.map((c) => (c.id === editCar.id ? editCar : c))
+      );
+    } else {
+      // Add new car
+      const newCar = { ...editCar, id: Date.now() };
+      setCars((prev) => [...prev, newCar]);
+    }
+
+    setEditVisible(false);
+  };
+
   return (
     <div
       style={{
         minHeight: "100vh",
         background: "#a4aeedff",
-        padding: "3rem 1rem",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         color: "#fff",
       }}
     >
-      <h1 style={{ marginBottom: 32, fontWeight: 700, fontSize: 32 }}>Manage Car Listings</h1>
+      {/* Header */}
       <div
         style={{
-          width: "100%",
-          maxWidth: 800,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "1rem 2rem",
           background: "#232946",
-          borderRadius: 12,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
-          padding: 24,
+        }}
+      >
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Car Listings</h1>
+        <Button
+          label="Add New Car"
+          icon="pi pi-plus"
+          className="p-button-success"
+          onClick={handleAddNew}
+        />
+      </div>
+
+      {/* Car List Box Full Page */}
+      <div
+        style={{
+          flex: 1,
+          width: "100%",
+          background: "#232946",
+          padding: "2rem",
+          boxSizing: "border-box",
         }}
       >
         {cars.map((car) => (
@@ -37,21 +93,13 @@ export default function AdminCarsPage() {
             }}
           >
             <span>{car.name}</span>
-            <div>
-              <button
-                style={{
-                  marginRight: 8,
-                  padding: "6px 12px",
-                  background: "#4caf50",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                }}
-                onClick={() => alert(`Approved ${car.name}`)}
-              >
-                Approve
-              </button>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Button
+                label="Edit"
+                icon="pi pi-pencil"
+                className="p-button-sm p-button-info"
+                onClick={() => handleEdit(car)}
+              />
               <button
                 style={{
                   padding: "6px 12px",
@@ -61,7 +109,9 @@ export default function AdminCarsPage() {
                   borderRadius: 4,
                   cursor: "pointer",
                 }}
-                onClick={() => alert(`Removed ${car.name}`)}
+                onClick={() =>
+                  setCars((prev) => prev.filter((c) => c.id !== car.id))
+                }
               >
                 Remove
               </button>
@@ -69,6 +119,84 @@ export default function AdminCarsPage() {
           </div>
         ))}
       </div>
+
+      {/* Sidebar for Add/Edit */}
+      <Sidebar
+        visible={editVisible}
+        onHide={() => setEditVisible(false)}
+        position="right"
+        style={{ width: "30rem" }}
+      >
+        <form
+          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          onSubmit={handleSave}
+        >
+          <h2>{editCar?.id ? `Edit Car: ${editCar.name}` : "Add New Car"}</h2>
+
+          <label>
+            Car Name:
+            <input
+              type="text"
+              value={editCar?.name || ""}
+              onChange={(e) =>
+                setEditCar({ ...editCar, name: e.target.value })
+              }
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+                marginTop: 4,
+              }}
+              required
+            />
+          </label>
+
+          <label>
+            Model:
+            <input
+              type="text"
+              value={editCar?.model || ""}
+              onChange={(e) =>
+                setEditCar({ ...editCar, model: e.target.value })
+              }
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+                marginTop: 4,
+              }}
+            />
+          </label>
+
+          <label>
+            Price:
+            <input
+              type="number"
+              value={editCar?.price || ""}
+              onChange={(e) =>
+                setEditCar({ ...editCar, price: e.target.value })
+              }
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+                marginTop: 4,
+              }}
+            />
+          </label>
+
+          <Button
+            type="submit"
+            label="Save"
+            icon="pi pi-check"
+            className="p-button-success"
+            style={{ alignSelf: "flex-start" }}
+          />
+        </form>
+      </Sidebar>
     </div>
-  );  
+  );
 }

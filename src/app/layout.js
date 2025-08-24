@@ -1,7 +1,7 @@
-// src/app/layout.js
 import "primereact/resources/themes/lara-light-blue/theme.css"; // Theme (can be any)
 import "primereact/resources/primereact.min.css"; // PrimeReact core styles
-import "primeicons/primeicons.css";// PrimeIcons (needed for icons)
+import "primeicons/primeicons.css";//layout.js
+
 
 
 export const metadata = {

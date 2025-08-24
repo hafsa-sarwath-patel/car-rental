@@ -4,7 +4,7 @@ import { Card } from "primereact/card";
 import { Button } from "primereact/button";
 import { useRouter } from "next/navigation";
 import { cars } from "../cars/data";
-import { users } from "../users/page";
+import { users } from "../users/data";
 
 export default function AdminDashboard() {
   const router = useRouter();
