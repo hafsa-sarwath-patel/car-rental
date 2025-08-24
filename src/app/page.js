@@ -1,103 +1,102 @@
-import Image from "next/image";
+// src/app/page.js
+"use client";
 
- export default function Home() {
-   return (
-     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-    <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-       <Image
-         className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { Card } from "primereact/card";
+import { Button } from "primereact/button";
+import { useRouter } from "next/navigation";
+import NavigationBar from "../components/NavigationBar";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function Dashboard() {
+  const router = useRouter();
+
+  const cards = [
+    { title: "Users", icon: "pi pi-users", 
+      description: "Manage all users of the platform.",
+       url: "/users" },
+
+    { title: "Admin",
+       icon: "pi pi-shield",
+        description: "Admin dashboard and controls.", 
+        url: "/admin" },
+
+    { title: "Hosters",
+       icon: "pi pi-home",
+        description: "Manage car hosters and their listings.",
+         url: "/hosters" },
+
+    { title: "Mechanic", 
+      icon: "pi pi-wrench",
+       description: "Mechanic management and service requests.",
+        url: "/mechanic" },
+        
+  ];
+
+  return (
+    <NavigationBar>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "transparent",
+          padding: "3rem 1rem",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <h1 style={{ color: "#fff", marginBottom: 32, fontWeight: 700, fontSize: 32 }}>
+          Car Rental Screens
+        </h1>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "2rem",
+            width: "100%",
+            maxWidth: 1000,
+          }}
+        >
+          {cards.map((card) => (
+            <Card
+              key={card.title}
+              title={
+                <span style={{ color: "#2a5298", fontWeight: 600 }}>
+                  <i className={card.icon} style={{ marginRight: 10 }} />
+                  {card.title}
+                </span>
+              }
+              style={{
+                background: "#232946",
+                color: "#fefefeff",
+                borderRadius: 12,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+                border: "none",
+                minHeight: 200,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
+              footer={
+                <Button
+                  label="Go"
+                  icon="pi pi-arrow-right"
+                  className="p-button-sm"
+                  style={{
+                    background: "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)",
+                    border: "none",
+                    color: "#fff",
+                    fontWeight: 600,
+                    marginTop: 16,
+                  }}
+                  onClick={() => router.push(card.url)}
+                />
+              }
+            >
+              <p style={{ color: "#edf1f5ff", marginTop: 12 }}>{card.description}</p>
+            </Card>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </NavigationBar>
   );
 }
