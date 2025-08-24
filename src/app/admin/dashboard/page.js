@@ -3,33 +3,34 @@
 import { Card } from "primereact/card";
 import { Button } from "primereact/button";
 import { useRouter } from "next/navigation";
+import { cars } from "../cars/data";
+import { users } from "../users/page";
 
 export default function AdminDashboard() {
   const router = useRouter();
 
   const cards = [
     {
-      title: "User Management",
+      title: "Users",
       icon: "pi pi-users",
-      description: "View and manage all users.",
+      total: users.length,  // Count from users file
       url: "/admin/users",
     },
     {
-      title: "Car Listings",
+      title: "Cars",
       icon: "pi pi-car",
-      description: "Approve or remove car listings.",
+      total: cars.length, // Count from cars file
       url: "/admin/cars",
     },
     {
       title: "Bookings",
       icon: "pi pi-calendar",
-      description: "Monitor and manage bookings.",
+      total: 0, // You can create `bookings/data.js` later
       url: "/admin/bookings",
     },
     {
-      title: "settings",
-      icon: "pi pi-chart-bar",
-      description: "settings and configurations.",
+      title: "Settings",
+      icon: "pi pi-cog",
       url: "/admin/settings",
     },
   ];
@@ -76,6 +77,7 @@ export default function AdminDashboard() {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
+              padding: "1rem",
             }}
             footer={
               <Button
@@ -93,7 +95,9 @@ export default function AdminDashboard() {
               />
             }
           >
-            <p style={{ color: "#b0b8c1", marginTop: 12 }}>{card.description}</p>
+            <h2 style={{ fontSize: 24, margin: "1rem 0", color: "#fff" }}>
+              Total: {card.total}
+            </h2>
           </Card>
         ))}
       </div>
