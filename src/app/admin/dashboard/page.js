@@ -3,7 +3,7 @@
 import { Card } from "primereact/card";
 import { Button } from "primereact/button";
 import { useRouter } from "next/navigation";
-import { cars } from "../cars/data";
+import { cars } from "../brands/data";
 import { users } from "../users/data";
 
 export default function AdminDashboard() {
@@ -20,7 +20,7 @@ export default function AdminDashboard() {
       title: "Cars",
       icon: "pi pi-car",
       total: cars.length, // Count from cars file
-      url: "/admin/cars",
+      url: "/admin/brands",
     },
     {
       title: "Bookings",

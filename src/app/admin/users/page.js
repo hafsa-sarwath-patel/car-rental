@@ -114,29 +114,40 @@ export default function AdminUsersPage() {
       <span style={{ flex: 2 }}>{user.name}</span>
       <span style={{ flex: 2 }}>{user.role}</span>
 
-      <div style={{ display: "flex", gap: "10px", flex: 2, justifyContent: "flex-end" }}>
-        <Button
-          label="Edit"
-          icon="pi pi-pencil"
-          className="p-button-sm p-button-info"
-          onClick={() => handleEdit(user)}
-        />
-        <button
-          style={{
-            padding: "6px 12px",
-            background: "#f44336",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-          onClick={() =>
-            setUsers((prev) => prev.filter((u) => u.id !== user.id))
-          }
-        >
-          Remove
-        </button>
-      </div>
+   <div
+  style={{
+    display: "flex",
+    gap: "10px",
+    flex: 2,
+    justifyContent: "flex-end",
+  }}
+>
+  {user.role !== "customer" && user.role !== "hoster" && (
+    <Button
+      label="Edit"
+      icon="pi pi-pencil"
+      className="p-button-sm p-button-info"
+      onClick={() => handleEdit(user)}
+    />
+  )}
+
+  <button
+    style={{
+      padding: "6px 12px",
+      background: "#f44336",
+      color: "#fff",
+      border: "none",
+      borderRadius: 4,
+      cursor: "pointer",
+    }}
+    onClick={() =>
+      setUsers((prev) => prev.filter((u) => u.id !== user.id))
+    }
+  >
+    Remove
+  </button>
+</div>
+
     </div>
   ))}
 </div>

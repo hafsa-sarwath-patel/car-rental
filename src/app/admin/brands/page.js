@@ -20,7 +20,7 @@ export default function AdminCarsPage() {
 
   // Add new car
   const handleAddNew = () => {
-    setEditCar({ id: null, name: "", model: "", price: "" });
+    setEditCar({ id: null, name: "", model: "", price: "", logo: "" });
     setEditVisible(true);
   };
 
@@ -30,9 +30,7 @@ export default function AdminCarsPage() {
 
     if (editCar.id) {
       // Update existing car
-      setCars((prev) =>
-        prev.map((c) => (c.id === editCar.id ? editCar : c))
-      );
+      setCars((prev) => prev.map((c) => (c.id === editCar.id ? editCar : c)));
     } else {
       // Add new car
       const newCar = { ...editCar, id: Date.now() };
@@ -40,6 +38,18 @@ export default function AdminCarsPage() {
     }
 
     setEditVisible(false);
+  };
+
+  // Handle Logo Upload (Preview)
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditCar({ ...editCar, logo: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -71,7 +81,7 @@ export default function AdminCarsPage() {
         />
       </div>
 
-      {/* Car List Box Full Page */}
+      {/* Car List */}
       <div
         style={{
           flex: 1,
@@ -92,7 +102,19 @@ export default function AdminCarsPage() {
               borderBottom: "1px solid #444",
             }}
           >
-            <span>{car.name}</span>
+            {/* Car Logo + Name */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              {car.logo && (
+                <img
+                  src={car.logo}
+                  alt={car.name}
+                  style={{ width: 80, height: 80, borderRadius: "50%" }}
+                />
+              )}
+              <span>{car.name}</span>
+            </div>
+
+            {/* Edit/Delete Buttons */}
             <div style={{ display: "flex", gap: "10px" }}>
               <Button
                 label="Edit"
@@ -186,6 +208,18 @@ export default function AdminCarsPage() {
                 marginTop: 4,
               }}
             />
+          </label>
+
+          <label>
+            Car Logo:
+            <input type="file" accept="image/*" onChange={handleLogoUpload} />
+            {editCar?.logo && (
+              <img
+                src={editCar.logo}
+                alt="Preview"
+                style={{  marginTop: 10 }}
+              />
+            )}
           </label>
 
           <Button
