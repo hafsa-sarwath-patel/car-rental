@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
+import { Toast } from "primereact/toast";
 
 export default function AdminStatesPage() {
   const [states, setStates] = useState([
@@ -11,6 +12,7 @@ export default function AdminStatesPage() {
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editState, setEditState] = useState(null);
+  const toast = useRef(null);
 
   // Open Sidebar for Add/Edit
   const openSidebar = (state = null) => {
@@ -22,11 +24,25 @@ export default function AdminStatesPage() {
   const handleSave = (e) => {
     e.preventDefault();
     if (editState.id) {
+      // Update existing state
       setStates((prev) =>
         prev.map((s) => (s.id === editState.id ? editState : s))
       );
+      toast.current.show({
+        severity: "info",
+        summary: "Updated",
+        detail: "State updated successfully",
+        life: 3000,
+      });
     } else {
+      // Add new state
       setStates((prev) => [...prev, { ...editState, id: Date.now() }]);
+      toast.current.show({
+        severity: "success",
+        summary: "Added",
+        detail: "State added successfully",
+        life: 3000,
+      });
     }
     setSidebarVisible(false);
   };
@@ -34,6 +50,12 @@ export default function AdminStatesPage() {
   // Delete State
   const handleDelete = (id) => {
     setStates((prev) => prev.filter((s) => s.id !== id));
+    toast.current.show({
+      severity: "warn",
+      summary: "Deleted",
+      detail: "State deleted successfully",
+      life: 3000,
+    });
   };
 
   return (
@@ -46,6 +68,8 @@ export default function AdminStatesPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{

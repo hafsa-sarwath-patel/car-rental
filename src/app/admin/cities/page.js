@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
+import { Toast } from "primereact/toast";
 
 export default function AdminCitiesPage() {
   const [cities, setCities] = useState([
@@ -11,6 +12,7 @@ export default function AdminCitiesPage() {
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editCity, setEditCity] = useState(null);
+  const toast = useRef(null);
 
   // Open Sidebar for Add/Edit
   const openSidebar = (city = null) => {
@@ -25,8 +27,20 @@ export default function AdminCitiesPage() {
       setCities((prev) =>
         prev.map((c) => (c.id === editCity.id ? editCity : c))
       );
+      toast.current.show({
+        severity: "info",
+        summary: "Updated",
+        detail: "City updated successfully",
+        life: 3000,
+      });
     } else {
       setCities((prev) => [...prev, { ...editCity, id: Date.now() }]);
+      toast.current.show({
+        severity: "success",
+        summary: "Added",
+        detail: "City added successfully",
+        life: 3000,
+      });
     }
     setSidebarVisible(false);
   };
@@ -34,6 +48,12 @@ export default function AdminCitiesPage() {
   // Delete City
   const handleDelete = (id) => {
     setCities((prev) => prev.filter((c) => c.id !== id));
+    toast.current.show({
+      severity: "warn",
+      summary: "Deleted",
+      detail: "City deleted successfully",
+      life: 3000,
+    });
   };
 
   return (
@@ -46,6 +66,8 @@ export default function AdminCitiesPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{

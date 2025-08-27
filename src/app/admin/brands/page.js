@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cars as initialCars } from "./data";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
+import { Toast } from "primereact/toast";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -11,6 +12,7 @@ export default function AdminCarsPage() {
   const [cars, setCars] = useState(initialCars);
   const [editVisible, setEditVisible] = useState(false);
   const [editCar, setEditCar] = useState(null);
+  const toast = useRef(null);
 
   // Edit existing car
   const handleEdit = (car) => {
@@ -29,18 +31,39 @@ export default function AdminCarsPage() {
     e.preventDefault();
 
     if (editCar.id) {
-      // Update existing car
       setCars((prev) => prev.map((c) => (c.id === editCar.id ? editCar : c)));
+      toast.current.show({
+        severity: "success",
+        summary: "Updated",
+        detail: "Car updated successfully",
+        life: 3000,
+      });
     } else {
-      // Add new car
       const newCar = { ...editCar, id: Date.now() };
       setCars((prev) => [...prev, newCar]);
+      toast.current.show({
+        severity: "success",
+        summary: "Added",
+        detail: "New car added successfully",
+        life: 3000,
+      });
     }
 
     setEditVisible(false);
   };
 
-  // Handle Logo Upload (Preview)
+  // Remove car
+  const handleRemove = (carId) => {
+    setCars((prev) => prev.filter((c) => c.id !== carId));
+    toast.current.show({
+      severity: "warn",
+      summary: "Deleted",
+      detail: "Car removed successfully",
+      life: 3000,
+    });
+  };
+
+  // Handle Logo Upload
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -62,6 +85,8 @@ export default function AdminCarsPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{
@@ -102,7 +127,6 @@ export default function AdminCarsPage() {
               borderBottom: "1px solid #444",
             }}
           >
-            {/* Car Logo + Name */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               {car.logo && (
                 <img
@@ -114,7 +138,6 @@ export default function AdminCarsPage() {
               <span>{car.name}</span>
             </div>
 
-            {/* Edit/Delete Buttons */}
             <div style={{ display: "flex", gap: "10px" }}>
               <Button
                 label="Edit"
@@ -131,9 +154,7 @@ export default function AdminCarsPage() {
                   borderRadius: 4,
                   cursor: "pointer",
                 }}
-                onClick={() =>
-                  setCars((prev) => prev.filter((c) => c.id !== car.id))
-                }
+                onClick={() => handleRemove(car.id)}
               >
                 Remove
               </button>
@@ -217,7 +238,7 @@ export default function AdminCarsPage() {
               <img
                 src={editCar.logo}
                 alt="Preview"
-                style={{  marginTop: 10 }}
+                style={{ marginTop: 10 }}
               />
             )}
           </label>

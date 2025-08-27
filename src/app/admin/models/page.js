@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { models as initialModels } from "./data";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
+import { Toast } from "primereact/toast";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
 export default function AdminModelsPage() {
   const [models, setModels] = useState(initialModels);
-
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [editModel, setEditModel] = useState(null); // null = Add Mode
-
+  const [editModel, setEditModel] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(models.length / itemsPerPage);
+
+  const toast = useRef(null); // Toast reference
 
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -40,17 +41,20 @@ export default function AdminModelsPage() {
     if (editModel.id) {
       // Update existing model
       setModels((prev) => prev.map((m) => (m.id === editModel.id ? editModel : m)));
+      toast.current.show({ severity: "success", summary: "Updated", detail: "Model updated successfully", life: 3000 });
     } else {
       // Add new model
       const newModel = { ...editModel, id: Date.now() };
       setModels((prev) => [...prev, newModel]);
+      toast.current.show({ severity: "success", summary: "Added", detail: "New model added", life: 3000 });
     }
     setSidebarVisible(false);
   };
 
-  // Delete Model (from Sidebar)
+  // Delete Model
   const handleDelete = () => {
     setModels((prev) => prev.filter((m) => m.id !== editModel.id));
+    toast.current.show({ severity: "warn", summary: "Deleted", detail: "Model deleted successfully", life: 3000 });
     setSidebarVisible(false);
   };
 
@@ -64,6 +68,8 @@ export default function AdminModelsPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{

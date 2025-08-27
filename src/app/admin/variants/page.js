@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { variants as initialVariants } from "./data";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
+import { Toast } from "primereact/toast";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -12,11 +13,11 @@ export default function AdminVariantsPage() {
   const [variants, setVariants] = useState(initialVariants);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editVariant, setEditVariant] = useState(null); // null = Add Mode
-
   const [currentPage, setCurrentPage] = useState(1);
+  const toast = useRef(null);
+
   const itemsPerPage = 5;
   const totalPages = Math.ceil(variants.length / itemsPerPage);
-
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentVariants = variants.slice(indexOfFirst, indexOfLast);
@@ -38,16 +39,19 @@ export default function AdminVariantsPage() {
     e.preventDefault();
     if (editVariant.id) {
       setVariants((prev) => prev.map((v) => (v.id === editVariant.id ? editVariant : v)));
+      toast.current.show({ severity: "success", summary: "Updated", detail: "Variant updated successfully", life: 3000 });
     } else {
       const newVariant = { ...editVariant, id: Date.now() };
       setVariants((prev) => [...prev, newVariant]);
+      toast.current.show({ severity: "success", summary: "Added", detail: "Variant added successfully", life: 3000 });
     }
     setSidebarVisible(false);
   };
 
-  // Delete Variant (from Sidebar)
+  // Delete Variant
   const handleDelete = () => {
     setVariants((prev) => prev.filter((v) => v.id !== editVariant.id));
+    toast.current.show({ severity: "warn", summary: "Deleted", detail: "Variant deleted", life: 3000 });
     setSidebarVisible(false);
   };
 
@@ -61,6 +65,8 @@ export default function AdminVariantsPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{
@@ -72,12 +78,7 @@ export default function AdminVariantsPage() {
         }}
       >
         <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Variants</h1>
-        <Button
-          label="Add New Variant"
-          icon="pi pi-plus"
-          className="p-button-success"
-          onClick={openAddSidebar}
-        />
+        <Button label="Add New Variant" icon="pi pi-plus" className="p-button-success" onClick={openAddSidebar} />
       </div>
 
       {/* Table */}
@@ -127,17 +128,9 @@ export default function AdminVariantsPage() {
         </div>
       </div>
 
-      {/* Sidebar (Add/Edit) */}
-      <Sidebar
-        visible={sidebarVisible}
-        onHide={() => setSidebarVisible(false)}
-        position="right"
-        style={{ width: "30rem" }}
-      >
-        <form
-          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
-          onSubmit={handleSave}
-        >
+      {/* Sidebar */}
+      <Sidebar visible={sidebarVisible} onHide={() => setSidebarVisible(false)} position="right" style={{ width: "30rem" }}>
+        <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }} onSubmit={handleSave}>
           <h2>{editVariant?.id ? "Edit Variant" : "Add New Variant"}</h2>
           <label>
             Variant Name:
@@ -174,13 +167,7 @@ export default function AdminVariantsPage() {
 
           <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />
           {editVariant?.id && (
-            <Button
-              type="button"
-              label="Delete"
-              icon="pi pi-trash"
-              className="p-button-danger"
-              onClick={handleDelete}
-            />
+            <Button type="button" label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={handleDelete} />
           )}
         </form>
       </Sidebar>

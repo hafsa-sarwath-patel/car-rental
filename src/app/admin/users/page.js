@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { users as initialUsers } from "./data";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
+import { Toast } from "primereact/toast";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
@@ -11,6 +12,12 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState(initialUsers);
   const [editVisible, setEditVisible] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const toast = useRef(null);
+
+  // Show Toast Notification
+  const showToast = (severity, summary, detail) => {
+    toast.current.show({ severity, summary, detail, life: 3000 });
+  };
 
   // Edit existing user
   const handleEdit = (user) => {
@@ -33,13 +40,21 @@ export default function AdminUsersPage() {
       setUsers((prev) =>
         prev.map((u) => (u.id === editUser.id ? editUser : u))
       );
+      showToast("success", "User Updated", `${editUser.name} has been updated`);
     } else {
       // Add new user
       const newUser = { ...editUser, id: Date.now() };
       setUsers((prev) => [...prev, newUser]);
+      showToast("success", "User Added", `${newUser.name} has been added`);
     }
 
     setEditVisible(false);
+  };
+
+  // Remove user
+  const handleRemove = (id, name) => {
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    showToast("warn", "User Removed", `${name} has been removed`);
   };
 
   return (
@@ -52,6 +67,8 @@ export default function AdminUsersPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{
@@ -71,88 +88,83 @@ export default function AdminUsersPage() {
         />
       </div>
 
-    {/* User List Box Full Page */}
-<div
-  style={{
-    flex: 1,
-    width: "100%",
-    background: "#232946",
-    padding: "2rem",
-    boxSizing: "border-box",
-  }}
->
-  {/* Table Header */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      fontWeight: "bold",
-      borderBottom: "2px solid #555",
-      paddingBottom: "10px",
-      marginBottom: "10px",
-    }}
-  >
-    <span style={{ flex: 1 }}>ID</span>
-    <span style={{ flex: 2 }}>Name</span>
-    <span style={{ flex: 2 }}>Role</span>
-    <span style={{ flex: 2, textAlign: "right" }}>Actions</span>
-  </div>
+      {/* User List */}
+      <div
+        style={{
+          flex: 1,
+          width: "100%",
+          background: "#232946",
+          padding: "2rem",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* Table Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontWeight: "bold",
+            borderBottom: "2px solid #555",
+            paddingBottom: "10px",
+            marginBottom: "10px",
+          }}
+        >
+          <span style={{ flex: 1 }}>ID</span>
+          <span style={{ flex: 2 }}>Name</span>
+          <span style={{ flex: 2 }}>Role</span>
+          <span style={{ flex: 2, textAlign: "right" }}>Actions</span>
+        </div>
 
-  {/* User Rows */}
-  {users.map((user) => (
-    <div
-      key={user.id}
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "12px 0",
-        borderBottom: "1px solid #444",
-      }}
-    >
-      <span style={{ flex: 1 }}>{user.id}</span>
-      <span style={{ flex: 2 }}>{user.name}</span>
-      <span style={{ flex: 2 }}>{user.role}</span>
+        {/* User Rows */}
+        {users.map((user) => (
+          <div
+            key={user.id}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "12px 0",
+              borderBottom: "1px solid #444",
+            }}
+          >
+            <span style={{ flex: 1 }}>{user.id}</span>
+            <span style={{ flex: 2 }}>{user.name}</span>
+            <span style={{ flex: 2 }}>{user.role}</span>
 
-   <div
-  style={{
-    display: "flex",
-    gap: "10px",
-    flex: 2,
-    justifyContent: "flex-end",
-  }}
->
-  {user.role !== "customer" && user.role !== "hoster" && (
-    <Button
-      label="Edit"
-      icon="pi pi-pencil"
-      className="p-button-sm p-button-info"
-      onClick={() => handleEdit(user)}
-    />
-  )}
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flex: 2,
+                justifyContent: "flex-end",
+              }}
+            >
+              {user.role !== "customer" && user.role !== "hoster" && (
+                <Button
+                  label="Edit"
+                  icon="pi pi-pencil"
+                  className="p-button-sm p-button-info"
+                  onClick={() => handleEdit(user)}
+                />
+              )}
 
-  <button
-    style={{
-      padding: "6px 12px",
-      background: "#f44336",
-      color: "#fff",
-      border: "none",
-      borderRadius: 4,
-      cursor: "pointer",
-    }}
-    onClick={() =>
-      setUsers((prev) => prev.filter((u) => u.id !== user.id))
-    }
-  >
-    Remove
-  </button>
-</div>
-
-    </div>
-  ))}
-</div>
-    
-
+              <button
+                style={{
+                  padding: "6px 12px",
+                  background: "#f44336",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                }}
+                onClick={() => handleRemove(user.id, user.name)}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Sidebar for Add/Edit */}
       <Sidebar
@@ -233,6 +245,5 @@ export default function AdminUsersPage() {
         </form>
       </Sidebar>
     </div>
- 
   );
 }

@@ -1,24 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { checklists as initialChecklists } from "./data";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Dropdown } from "primereact/dropdown";
+import { Toast } from "primereact/toast";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
 export default function AdminChecklistsPage() {
   const [checklists, setChecklists] = useState(initialChecklists);
-
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [editChecklist, setEditChecklist] = useState(null); // null = Add Mode
-
+  const [editChecklist, setEditChecklist] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const toast = useRef(null);
+
   const itemsPerPage = 5;
   const totalPages = Math.ceil(checklists.length / itemsPerPage);
-
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentChecklists = checklists.slice(indexOfFirst, indexOfLast);
@@ -43,23 +43,43 @@ export default function AdminChecklistsPage() {
   // Save/Add Checklist
   const handleSave = (e) => {
     e.preventDefault();
+
     if (editChecklist.id) {
       // Update existing checklist
       setChecklists((prev) =>
         prev.map((c) => (c.id === editChecklist.id ? editChecklist : c))
       );
+      toast.current.show({
+        severity: "success",
+        summary: "Updated",
+        detail: "Checklist updated successfully!",
+        life: 3000,
+      });
     } else {
       // Add new checklist
       const newChecklist = { ...editChecklist, id: Date.now() };
       setChecklists((prev) => [...prev, newChecklist]);
+      toast.current.show({
+        severity: "success",
+        summary: "Added",
+        detail: "New checklist added successfully!",
+        life: 3000,
+      });
     }
+
     setSidebarVisible(false);
   };
 
-  // Delete Checklist (from Sidebar)
+  // Delete Checklist
   const handleDelete = () => {
     setChecklists((prev) => prev.filter((c) => c.id !== editChecklist.id));
     setSidebarVisible(false);
+    toast.current.show({
+      severity: "warn",
+      summary: "Deleted",
+      detail: "Checklist deleted!",
+      life: 3000,
+    });
   };
 
   return (
@@ -72,6 +92,8 @@ export default function AdminChecklistsPage() {
         color: "#fff",
       }}
     >
+      <Toast ref={toast} />
+
       {/* Header */}
       <div
         style={{
@@ -93,10 +115,14 @@ export default function AdminChecklistsPage() {
 
       {/* Table */}
       <div style={{ flex: 1, padding: "2rem", background: "#232946" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}>
+        <table
+          style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}
+        >
           <thead>
             <tr style={{ borderBottom: "2px solid #444" }}>
-              <th style={{ textAlign: "left", padding: "10px" }}>Checklist Name</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>
+                Checklist Name
+              </th>
               <th style={{ textAlign: "left", padding: "10px" }}>Category</th>
               <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
             </tr>
@@ -119,7 +145,9 @@ export default function AdminChecklistsPage() {
         </table>
 
         {/* Pagination */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+        <div
+          style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}
+        >
           <Button
             label="Prev"
             disabled={currentPage === 1}
@@ -138,7 +166,7 @@ export default function AdminChecklistsPage() {
         </div>
       </div>
 
-      {/* Sidebar (Add/Edit) */}
+      {/* Sidebar */}
       <Sidebar
         visible={sidebarVisible}
         onHide={() => setSidebarVisible(false)}
@@ -150,6 +178,7 @@ export default function AdminChecklistsPage() {
           onSubmit={handleSave}
         >
           <h2>{editChecklist?.id ? "Edit Checklist" : "Add New Checklist"}</h2>
+
           <label>
             Checklist Name:
             <input
