@@ -16,12 +16,13 @@ export default function AdminDashboard() {
       total: users.length,  // Count from users file
       url: "/admin/users",
     },
-    {
-      title: "Cars",
-      icon: "pi pi-car",
-      total: cars.length, // Count from cars file
-      url: "/admin/brands",
-    },
+   {
+  title: "Brands",
+  icon: "pi pi-car",
+  total: brands.length, // ✅ use brands
+  url: "/admin/brands",
+},
+
     {
       title: "Bookings",
       icon: "pi pi-calendar",
