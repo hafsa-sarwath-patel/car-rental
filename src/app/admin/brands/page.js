@@ -1,6 +1,7 @@
 "use client";
+
 import { useState, useRef } from "react";
-import { cars as initialCars } from "./data";
+import { brands as initialBrands } from "./data"; // importing from data.js
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
@@ -8,71 +9,51 @@ import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
-export default function AdminCarsPage() {
-  const [cars, setCars] = useState(initialCars);
-  const [editVisible, setEditVisible] = useState(false);
-  const [editCar, setEditCar] = useState(null);
+export default function AdminBrandsPage() {
+  const [brands, setBrands] = useState(initialBrands);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [editBrand, setEditBrand] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(brands.length / itemsPerPage);
+
   const toast = useRef(null);
 
-  // Edit existing car
-  const handleEdit = (car) => {
-    setEditCar(car);
-    setEditVisible(true);
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentBrands = brands.slice(indexOfFirst, indexOfLast);
+
+  // Open Add Brand Sidebar
+  const openAddSidebar = () => {
+    setEditBrand({ id: null, name: "", image: "", active: true });
+    setSidebarVisible(true);
   };
 
-  // Add new car
-  const handleAddNew = () => {
-    setEditCar({ id: null, name: "", model: "", price: "", logo: "" });
-    setEditVisible(true);
+  // Open Edit Brand Sidebar
+  const openEditSidebar = (brand) => {
+    setEditBrand(brand);
+    setSidebarVisible(true);
   };
 
-  // Save car (new or existing)
+  // Save/Add Brand
   const handleSave = (e) => {
     e.preventDefault();
-
-    if (editCar.id) {
-      setCars((prev) => prev.map((c) => (c.id === editCar.id ? editCar : c)));
-      toast.current.show({
-        severity: "success",
-        summary: "Updated",
-        detail: "Car updated successfully",
-        life: 3000,
-      });
+    if (editBrand.id) {
+      setBrands((prev) => prev.map((b) => (b.id === editBrand.id ? editBrand : b)));
+      toast.current.show({ severity: "success", summary: "Updated", detail: "Brand updated successfully", life: 3000 });
     } else {
-      const newCar = { ...editCar, id: Date.now() };
-      setCars((prev) => [...prev, newCar]);
-      toast.current.show({
-        severity: "success",
-        summary: "Added",
-        detail: "New car added successfully",
-        life: 3000,
-      });
+      const newBrand = { ...editBrand, id: Date.now() };
+      setBrands((prev) => [...prev, newBrand]);
+      toast.current.show({ severity: "success", summary: "Added", detail: "New brand added", life: 3000 });
     }
-
-    setEditVisible(false);
+    setSidebarVisible(false);
   };
 
-  // Remove car
-  const handleRemove = (carId) => {
-    setCars((prev) => prev.filter((c) => c.id !== carId));
-    toast.current.show({
-      severity: "warn",
-      summary: "Deleted",
-      detail: "Car removed successfully",
-      life: 3000,
-    });
-  };
-
-  // Handle Logo Upload
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditCar({ ...editCar, logo: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
+  // Delete Brand
+  const handleDelete = () => {
+    setBrands((prev) => prev.filter((b) => b.id !== editBrand.id));
+    toast.current.show({ severity: "warn", summary: "Deleted", detail: "Brand deleted successfully", life: 3000 });
+    setSidebarVisible(false);
   };
 
   return (
@@ -97,76 +78,74 @@ export default function AdminCarsPage() {
           background: "#232946",
         }}
       >
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Car Listings</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Brands</h1>
         <Button
-          label="Add New Car"
+          label="Add New Brand"
           icon="pi pi-plus"
           className="p-button-success"
-          onClick={handleAddNew}
+          onClick={openAddSidebar}
         />
       </div>
 
-      {/* Car List */}
-      <div
-        style={{
-          flex: 1,
-          width: "100%",
-          background: "#232946",
-          padding: "2rem",
-          boxSizing: "border-box",
-        }}
-      >
-        {cars.map((car) => (
-          <div
-            key={car.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "12px 0",
-              borderBottom: "1px solid #444",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              {car.logo && (
-                <img
-                  src={car.logo}
-                  alt={car.name}
-                  style={{ width: 80, height: 80, borderRadius: "50%" }}
-                />
-              )}
-              <span>{car.name}</span>
-            </div>
+      {/* Table */}
+      <div style={{ flex: 1, padding: "2rem", background: "#232946" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #444" }}>
+              <th style={{ textAlign: "left", padding: "10px" }}>Image</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Name</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Active</th>
+              <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentBrands.map((brand) => (
+              <tr key={brand.id} style={{ borderBottom: "1px solid #444" }}>
+                <td style={{ padding: "10px" }}>
+                  {brand.image ? (
+                    <img src={brand.image} alt={brand.name} width={50} height={50} style={{ borderRadius: 8 }} />
+                  ) : (
+                    "No Image"
+                  )}
+                </td>
+                <td style={{ padding: "10px" }}>{brand.name}</td>
+                <td style={{ padding: "10px" }}>{brand.active ? "Yes" : "No"}</td>
+                <td style={{ textAlign: "center", padding: "10px" }}>
+                  <Button
+                    icon="pi pi-pencil"
+                    className="p-button-rounded p-button-info p-button-sm"
+                    onClick={() => openEditSidebar(brand)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-            <div style={{ display: "flex", gap: "10px" }}>
-              <Button
-                label="Edit"
-                icon="pi pi-pencil"
-                className="p-button-sm p-button-info"
-                onClick={() => handleEdit(car)}
-              />
-              <button
-                style={{
-                  padding: "6px 12px",
-                  background: "#f44336",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                }}
-                onClick={() => handleRemove(car.id)}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
+        {/* Pagination */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+          <Button
+            label="Prev"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((prev) => prev - 1)}
+            className="p-button-text"
+          />
+          <span style={{ margin: "0 10px", alignSelf: "center" }}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            label="Next"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((prev) => prev + 1)}
+            className="p-button-text"
+          />
+        </div>
       </div>
 
-      {/* Sidebar for Add/Edit */}
+      {/* Sidebar (Add/Edit) */}
       <Sidebar
-        visible={editVisible}
-        onHide={() => setEditVisible(false)}
+        visible={sidebarVisible}
+        onHide={() => setSidebarVisible(false)}
         position="right"
         style={{ width: "30rem" }}
       >
@@ -174,35 +153,32 @@ export default function AdminCarsPage() {
           style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
           onSubmit={handleSave}
         >
-          <h2>{editCar?.id ? `Edit Car: ${editCar.name}` : "Add New Car"}</h2>
+          <h2>{editBrand?.id ? "Edit Brand" : "Add New Brand"}</h2>
 
           <label>
-            Car Name:
+            Brand Name:
             <input
               type="text"
-              value={editCar?.name || ""}
-              onChange={(e) =>
-                setEditCar({ ...editCar, name: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: 4,
-                border: "1px solid #ccc",
-                marginTop: 4,
-              }}
+              value={editBrand?.name || ""}
+              onChange={(e) => setEditBrand({ ...editBrand, name: e.target.value })}
               required
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+                marginTop: 4,
+              }}
             />
           </label>
 
           <label>
-            Model:
+            Brand Image URL:
             <input
               type="text"
-              value={editCar?.model || ""}
-              onChange={(e) =>
-                setEditCar({ ...editCar, model: e.target.value })
-              }
+              value={editBrand?.image || ""}
+              onChange={(e) => setEditBrand({ ...editBrand, image: e.target.value })}
+              placeholder="Paste image URL"
               style={{
                 width: "100%",
                 padding: "8px",
@@ -214,12 +190,11 @@ export default function AdminCarsPage() {
           </label>
 
           <label>
-            Price:
-            <input
-              type="number"
-              value={editCar?.price || ""}
+            Active:
+            <select
+              value={editBrand?.active ? "true" : "false"}
               onChange={(e) =>
-                setEditCar({ ...editCar, price: e.target.value })
+                setEditBrand({ ...editBrand, active: e.target.value === "true" })
               }
               style={{
                 width: "100%",
@@ -228,28 +203,22 @@ export default function AdminCarsPage() {
                 border: "1px solid #ccc",
                 marginTop: 4,
               }}
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+
+          <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />
+          {editBrand?.id && (
+            <Button
+              type="button"
+              label="Delete"
+              icon="pi pi-trash"
+              className="p-button-danger"
+              onClick={handleDelete}
             />
-          </label>
-
-          <label>
-            Car Logo:
-            <input type="file" accept="image/*" onChange={handleLogoUpload} />
-            {editCar?.logo && (
-              <img
-                src={editCar.logo}
-                alt="Preview"
-                style={{ marginTop: 10 }}
-              />
-            )}
-          </label>
-
-          <Button
-            type="submit"
-            label="Save"
-            icon="pi pi-check"
-            className="p-button-success"
-            style={{ alignSelf: "flex-start" }}
-          />
+          )}
         </form>
       </Sidebar>
     </div>

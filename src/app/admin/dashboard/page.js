@@ -3,7 +3,7 @@
 import { Card } from "primereact/card";
 import { Button } from "primereact/button";
 import { useRouter } from "next/navigation";
-import { cars } from "../brands/data";
+import {brands } from "../brands/data";
 import { users } from "../users/data";
 
 export default function AdminDashboard() {

@@ -28,9 +28,9 @@ export default function AdminLayout({ children }) {
          { label: "variants", icon: "pi pi-box", command: () => navigateTo("/admin/variants") },
         { label: "States", icon: "pi pi-map-marker", command: () => navigateTo("/admin/states") },
         { label: "Cities", icon: "pi pi-map-marker", command: () => navigateTo("/admin/cities") },
+          { label: "Checklist Category", icon: "pi pi-tags", command: () => navigateTo("/admin/checkCategory") },
         { label: "Checklist Options", icon: "pi pi-list", command: () => navigateTo("/admin/checklist-options") },
-       { label: "Checklist Category", icon: "pi pi-tags", command: () => navigateTo("/admin/checkCategory") },
-
+    
         { label: "Settings", icon: "pi pi-cog", command: () => navigateTo("/admin/settings") },
       ],
     },
@@ -38,7 +38,7 @@ export default function AdminLayout({ children }) {
       label: "Inventory",
       icon: "pi pi-folder",
       items: [
-        { label: "pending vehicle ", command: () =>navigateTo("/admin/bookings") },
+        { label: "pending vehicle ", command: () =>navigateTo("/admin/inventory/pendingVehicle") },
         { label: "available vehicle ", command: () => alert("Sample Inventory Item") },
       ],
     },

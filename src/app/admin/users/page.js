@@ -51,11 +51,7 @@ export default function AdminUsersPage() {
     setEditVisible(false);
   };
 
-  // Remove user
-  const handleRemove = (id, name) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-    showToast("warn", "User Removed", `${name} has been removed`);
-  };
+
 
   return (
     <div
@@ -111,6 +107,7 @@ export default function AdminUsersPage() {
         >
           <span style={{ flex: 1 }}>ID</span>
           <span style={{ flex: 2 }}>Name</span>
+          <span style={{ flex: 2 }}>email</span>
           <span style={{ flex: 2 }}>Role</span>
           <span style={{ flex: 2, textAlign: "right" }}>Actions</span>
         </div>
@@ -129,6 +126,7 @@ export default function AdminUsersPage() {
           >
             <span style={{ flex: 1 }}>{user.id}</span>
             <span style={{ flex: 2 }}>{user.name}</span>
+             <span style={{ flex: 2 }}>{user.email}</span>
             <span style={{ flex: 2 }}>{user.role}</span>
 
             <div
@@ -148,19 +146,7 @@ export default function AdminUsersPage() {
                 />
               )}
 
-              <button
-                style={{
-                  padding: "6px 12px",
-                  background: "#f44336",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                }}
-                onClick={() => handleRemove(user.id, user.name)}
-              >
-                Remove
-              </button>
+           
             </div>
           </div>
         ))}

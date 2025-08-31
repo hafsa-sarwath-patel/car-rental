@@ -60,7 +60,7 @@ export default function AdminChecklistsPage() {
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 2rem", background: "#232946" }}>
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Checklists</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}> Checklists options</h1>
         <Button label="Add New Checklist" icon="pi pi-plus" className="p-button-success" onClick={openAddSidebar} />
       </div>
 
@@ -69,7 +69,7 @@ export default function AdminChecklistsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #444" }}>
-              <th style={{ textAlign: "left", padding: "10px" }}>Checklist Option</th>
+              <th style={{ textAlign: "left", padding: "10px" }}> Option name</th>
               <th style={{ textAlign: "left", padding: "10px" }}>Category</th>
               <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
             </tr>
@@ -100,7 +100,7 @@ export default function AdminChecklistsPage() {
         <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }} onSubmit={handleSave}>
           <h2>{editChecklist?.id ? "Edit Checklist Option" : "Add New Checklist Option"}</h2>
           <label>
-            Checklist Name:
+            option Name:
             <input
               type="text"
               value={editChecklist?.name || ""}
@@ -109,16 +109,27 @@ export default function AdminChecklistsPage() {
               style={{ width: "100%", padding: "8px", borderRadius: 4, border: "1px solid #ccc", marginTop: 4 }}
             />
           </label>
-          <label>
-            Category:
-            <input
-              type="text"
-              value={editChecklist?.category || ""}
-              onChange={(e) => setEditChecklist({ ...editChecklist, category: e.target.value })}
-              required
-              style={{ width: "100%", padding: "8px", borderRadius: 4, border: "1px solid #ccc", marginTop: 4 }}
-            />
-          </label>
+        <label>
+  Category:
+  <select
+    value={editChecklist?.category || ""}
+    onChange={(e) => setEditChecklist({ ...editChecklist, category: e.target.value })}
+    required
+    style={{
+      width: "100%",
+      padding: "8px",
+      borderRadius: 4,
+      border: "1px solid #ccc",
+      marginTop: 4,
+    }}
+  >
+    <option value="" disabled>Select Category</option>
+    <option value="Interior">Interior</option>
+    <option value="Exterior">Exterior</option>
+    <option value="Engine">Engine</option>
+  </select>
+</label>
+
           <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />
           {editChecklist?.id && (
             <Button type="button" label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={handleDelete} />

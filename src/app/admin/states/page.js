@@ -1,30 +1,32 @@
 "use client";
+
 import { useState, useRef } from "react";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
 import { Toast } from "primereact/toast";
 
 export default function AdminStatesPage() {
   const [states, setStates] = useState([
-    { id: 1, name: "Punjab" },
-    { id: 2, name: "Karnataka" },
+    { id: 1, name: "Punjab", code: "PB" },
+    { id: 2, name: "Karnataka", code: "KA" },
   ]);
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editState, setEditState] = useState(null);
   const toast = useRef(null);
 
-  // Open Sidebar for Add/Edit
+  // Open Sidebar
   const openSidebar = (state = null) => {
-    setEditState(state ? { ...state } : { id: null, name: "" });
+    setEditState(state ? { ...state } : { id: null, name: "", code: "" });
     setSidebarVisible(true);
   };
 
-  // Save State (Add or Edit)
+  // Save state
   const handleSave = (e) => {
     e.preventDefault();
     if (editState.id) {
-      // Update existing state
       setStates((prev) =>
         prev.map((s) => (s.id === editState.id ? editState : s))
       );
@@ -35,7 +37,6 @@ export default function AdminStatesPage() {
         life: 3000,
       });
     } else {
-      // Add new state
       setStates((prev) => [...prev, { ...editState, id: Date.now() }]);
       toast.current.show({
         severity: "success",
@@ -47,25 +48,21 @@ export default function AdminStatesPage() {
     setSidebarVisible(false);
   };
 
-  // Delete State
-  const handleDelete = (id) => {
-    setStates((prev) => prev.filter((s) => s.id !== id));
-    toast.current.show({
-      severity: "warn",
-      summary: "Deleted",
-      detail: "State deleted successfully",
-      life: 3000,
-    });
-  };
+  // Action Buttons (Only Edit, No Delete)
+  const actionBodyTemplate = (rowData) => (
+    <Button
+      icon="pi pi-pencil"
+      className="p-button-sm p-button-info"
+      onClick={() => openSidebar(rowData)}
+    />
+  );
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#a4aeedff",
-        display: "flex",
-        flexDirection: "column",
-        color: "#fff",
+        background: "#f0f0f0ff",
+        padding: "2rem",
       }}
     >
       <Toast ref={toast} />
@@ -75,9 +72,7 @@ export default function AdminStatesPage() {
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          padding: "1rem 2rem",
-          background: "#232946",
+          marginBottom: "1rem",
         }}
       >
         <h1>States</h1>
@@ -89,40 +84,15 @@ export default function AdminStatesPage() {
         />
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: "2rem" }}>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {states.map((state) => (
-            <li
-              key={state.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px 0",
-                borderBottom: "1px solid #444",
-              }}
-            >
-              {state.name}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <Button
-                  label="Edit"
-                  icon="pi pi-pencil"
-                  className="p-button-sm p-button-info"
-                  onClick={() => openSidebar(state)}
-                />
-                <Button
-                  label="Remove"
-                  icon="pi pi-trash"
-                  className="p-button-sm p-button-danger"
-                  onClick={() => handleDelete(state.id)}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Table */}
+      <DataTable value={states} paginator rows={5} responsiveLayout="scroll">
+        <Column field="id" header="ID" sortable></Column>
+        <Column field="name" header="State Name" sortable></Column>
+        <Column field="code" header="Code" sortable></Column>
+        <Column header="Action" body={actionBodyTemplate}></Column>
+      </DataTable>
 
-      {/* Sidebar Add/Edit */}
+      {/* Sidebar */}
       <Sidebar
         visible={sidebarVisible}
         onHide={() => setSidebarVisible(false)}
@@ -141,6 +111,17 @@ export default function AdminStatesPage() {
               value={editState?.name || ""}
               onChange={(e) =>
                 setEditState({ ...editState, name: e.target.value })
+              }
+              style={{ width: "100%", padding: "8px" }}
+            />
+          </label>
+          <label>
+            Code:
+            <input
+              type="text"
+              value={editState?.code || ""}
+              onChange={(e) =>
+                setEditState({ ...editState, code: e.target.value })
               }
               style={{ width: "100%", padding: "8px" }}
             />

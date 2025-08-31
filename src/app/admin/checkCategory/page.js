@@ -1,68 +1,60 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { checklists as initialChecklists } from "./data";
+import { categories as initialCategories } from "./data"; // make sure data.js has {id, name, description}
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
-import { Dropdown } from "primereact/dropdown";
 import { Toast } from "primereact/toast";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
-export default function AdminChecklistsPage() {
-  const [checklists, setChecklists] = useState(initialChecklists);
+export default function AdminCategoriesPage() {
+  const [categories, setCategories] = useState(initialCategories);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [editChecklist, setEditChecklist] = useState(null);
+  const [editCategory, setEditCategory] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const toast = useRef(null);
 
   const itemsPerPage = 5;
-  const totalPages = Math.ceil(checklists.length / itemsPerPage);
+  const totalPages = Math.ceil(categories.length / itemsPerPage);
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentChecklists = checklists.slice(indexOfFirst, indexOfLast);
-
-  const categories = [
-    { label: "Interior", value: "Interior" },
-    { label: "Exterior", value: "Exterior" },
-  ];
+  const currentCategories = categories.slice(indexOfFirst, indexOfLast);
 
   // Open Add Sidebar
   const openAddSidebar = () => {
-    setEditChecklist({ id: null, name: "", category: "" });
+    setEditCategory({ id: null, name: "", description: "" });
     setSidebarVisible(true);
   };
 
   // Open Edit Sidebar
-  const openEditSidebar = (checklist) => {
-    setEditChecklist(checklist);
+  const openEditSidebar = (category) => {
+    setEditCategory(category);
     setSidebarVisible(true);
   };
 
-  // Save/Add Checklist
+  // Save/Add Category
   const handleSave = (e) => {
     e.preventDefault();
 
-    if (editChecklist.id) {
-      // Update existing checklist
-      setChecklists((prev) =>
-        prev.map((c) => (c.id === editChecklist.id ? editChecklist : c))
+    if (editCategory.id) {
+      setCategories((prev) =>
+        prev.map((c) => (c.id === editCategory.id ? editCategory : c))
       );
       toast.current.show({
         severity: "success",
         summary: "Updated",
-        detail: "Checklist updated successfully!",
+        detail: "Category updated successfully!",
         life: 3000,
       });
     } else {
-      // Add new checklist
-      const newChecklist = { ...editChecklist, id: Date.now() };
-      setChecklists((prev) => [...prev, newChecklist]);
+      const newCategory = { ...editCategory, id: Date.now() };
+      setCategories((prev) => [...prev, newCategory]);
       toast.current.show({
         severity: "success",
         summary: "Added",
-        detail: "New checklist added successfully!",
+        detail: "New category added successfully!",
         life: 3000,
       });
     }
@@ -70,14 +62,14 @@ export default function AdminChecklistsPage() {
     setSidebarVisible(false);
   };
 
-  // Delete Checklist
+  // Delete Category
   const handleDelete = () => {
-    setChecklists((prev) => prev.filter((c) => c.id !== editChecklist.id));
+    setCategories((prev) => prev.filter((c) => c.id !== editCategory.id));
     setSidebarVisible(false);
     toast.current.show({
       severity: "warn",
       summary: "Deleted",
-      detail: "Checklist deleted!",
+      detail: "Category deleted!",
       life: 3000,
     });
   };
@@ -104,9 +96,9 @@ export default function AdminChecklistsPage() {
           background: "#232946",
         }}
       >
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Checklists</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}>checklist Categories</h1>
         <Button
-          label="Add New Checklist"
+          label="Add New Category"
           icon="pi pi-plus"
           className="p-button-success"
           onClick={openAddSidebar}
@@ -120,23 +112,21 @@ export default function AdminChecklistsPage() {
         >
           <thead>
             <tr style={{ borderBottom: "2px solid #444" }}>
-              <th style={{ textAlign: "left", padding: "10px" }}>
-                Checklist Name
-              </th>
-              <th style={{ textAlign: "left", padding: "10px" }}>Category</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Category Name</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>Description</th>
               <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
             </tr>
           </thead>
           <tbody>
-            {currentChecklists.map((checklist) => (
-              <tr key={checklist.id} style={{ borderBottom: "1px solid #444" }}>
-                <td style={{ padding: "10px" }}>{checklist.name}</td>
-                <td style={{ padding: "10px" }}>{checklist.category}</td>
+            {currentCategories.map((category) => (
+              <tr key={category.id} style={{ borderBottom: "1px solid #444" }}>
+                <td style={{ padding: "10px" }}>{category.name}</td>
+                <td style={{ padding: "10px" }}>{category.description}</td>
                 <td style={{ textAlign: "center", padding: "10px" }}>
                   <Button
                     icon="pi pi-pencil"
                     className="p-button-rounded p-button-info p-button-sm"
-                    onClick={() => openEditSidebar(checklist)}
+                    onClick={() => openEditSidebar(category)}
                   />
                 </td>
               </tr>
@@ -177,15 +167,15 @@ export default function AdminChecklistsPage() {
           style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
           onSubmit={handleSave}
         >
-          <h2>{editChecklist?.id ? "Edit Checklist" : "Add New Checklist"}</h2>
+          <h2>{editCategory?.id ? "Edit Category" : "Add New Category"}</h2>
 
           <label>
-            Checklist Name:
+            Category Name:
             <input
               type="text"
-              value={editChecklist?.name || ""}
+              value={editCategory?.name || ""}
               onChange={(e) =>
-                setEditChecklist({ ...editChecklist, name: e.target.value })
+                setEditCategory({ ...editCategory, name: e.target.value })
               }
               required
               style={{
@@ -199,15 +189,21 @@ export default function AdminChecklistsPage() {
           </label>
 
           <label>
-            Category:
-            <Dropdown
-              value={editChecklist?.category || ""}
-              options={categories}
+            Description:
+            <textarea
+              value={editCategory?.description || ""}
               onChange={(e) =>
-                setEditChecklist({ ...editChecklist, category: e.value })
+                setEditCategory({ ...editCategory, description: e.target.value })
               }
-              placeholder="Select Category"
-              style={{ width: "100%", marginTop: 4 }}
+              required
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: 4,
+                border: "1px solid #ccc",
+                marginTop: 4,
+                minHeight: "80px",
+              }}
             />
           </label>
 
@@ -217,7 +213,7 @@ export default function AdminChecklistsPage() {
             icon="pi pi-check"
             className="p-button-success"
           />
-          {editChecklist?.id && (
+          {editCategory?.id && (
             <Button
               type="button"
               label="Delete"

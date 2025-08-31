@@ -3,24 +3,29 @@ import { useState, useRef } from "react";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
 import { Toast } from "primereact/toast";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { Dropdown } from "primereact/dropdown";
 
 export default function AdminCitiesPage() {
   const [cities, setCities] = useState([
-    { id: 1, name: "Mumbai" },
-    { id: 2, name: "Bangalore" },
+    { id: 1, name: "Mumbai", state: "Maharashtra" },
+    { id: 2, name: "Bangalore", state: "Karnataka" },
   ]);
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editCity, setEditCity] = useState(null);
   const toast = useRef(null);
 
+  const states = ["Maharashtra", "Karnataka", "Telangana", "Tamil Nadu", "Delhi"];
+
   // Open Sidebar for Add/Edit
   const openSidebar = (city = null) => {
-    setEditCity(city ? { ...city } : { id: null, name: "" });
+    setEditCity(city ? { ...city } : { id: null, name: "", state: "" });
     setSidebarVisible(true);
   };
 
-  // Save City (Add or Edit)
+  // Save City
   const handleSave = (e) => {
     e.preventDefault();
     if (editCity.id) {
@@ -45,22 +50,20 @@ export default function AdminCitiesPage() {
     setSidebarVisible(false);
   };
 
-  // Delete City
-  const handleDelete = (id) => {
-    setCities((prev) => prev.filter((c) => c.id !== id));
-    toast.current.show({
-      severity: "warn",
-      summary: "Deleted",
-      detail: "City deleted successfully",
-      life: 3000,
-    });
-  };
+  const actionBodyTemplate = (rowData) => (
+    <Button
+      label="Edit"
+      icon="pi pi-pencil"
+      className="p-button-sm p-button-info"
+      onClick={() => openSidebar(rowData)}
+    />
+  );
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#a4aeedff",
+        background: "#fafafaff",
         display: "flex",
         flexDirection: "column",
         color: "#fff",
@@ -87,40 +90,16 @@ export default function AdminCitiesPage() {
         />
       </div>
 
-      {/* Main Content */}
+      {/* Table */}
       <div style={{ flex: 1, padding: "2rem" }}>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {cities.map((city) => (
-            <li
-              key={city.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "10px 0",
-                borderBottom: "1px solid #444",
-              }}
-            >
-              {city.name}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <Button
-                  label="Edit"
-                  icon="pi pi-pencil"
-                  className="p-button-sm p-button-info"
-                  onClick={() => openSidebar(city)}
-                />
-                <Button
-                  label="Remove"
-                  icon="pi pi-trash"
-                  className="p-button-sm p-button-danger"
-                  onClick={() => handleDelete(city.id)}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <DataTable value={cities} paginator rows={5} responsiveLayout="scroll">
+          <Column field="name" header="City Name" sortable></Column>
+          <Column field="state" header="State Name" sortable></Column>
+          <Column body={actionBodyTemplate} header="Action"></Column>
+        </DataTable>
       </div>
 
-      {/* Sidebar Add/Edit */}
+      {/* Sidebar */}
       <Sidebar
         visible={sidebarVisible}
         onHide={() => setSidebarVisible(false)}
@@ -129,11 +108,17 @@ export default function AdminCitiesPage() {
       >
         <h2>{editCity?.id ? "Edit City" : "Add New City"}</h2>
         <form
-          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+            marginTop: "1rem",
+          }}
           onSubmit={handleSave}
         >
-          <label>
-            City Name:
+          {/* City Name */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <label><strong>City Name:</strong></label>
             <input
               type="text"
               value={editCity?.name || ""}
@@ -142,7 +127,22 @@ export default function AdminCitiesPage() {
               }
               style={{ width: "100%", padding: "8px" }}
             />
-          </label>
+          </div>
+
+          {/* State Name */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <label><strong>State Name:</strong></label>
+            <Dropdown
+              value={editCity?.state || ""}
+              options={states}
+              onChange={(e) =>
+                setEditCity({ ...editCity, state: e.value })
+              }
+              placeholder="Select a State"
+              style={{ width: "100%" }}
+            />
+          </div>
+
           <Button type="submit" label="Save" className="p-button-success" />
         </form>
       </Sidebar>

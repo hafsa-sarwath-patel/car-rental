@@ -24,7 +24,7 @@ export default function AdminVariantsPage() {
 
   // Open Add Variant Sidebar
   const openAddSidebar = () => {
-    setEditVariant({ id: null, name: "", brand: "" });
+    setEditVariant({ id: null, name: "", model: "" });
     setSidebarVisible(true);
   };
 
@@ -77,7 +77,7 @@ export default function AdminVariantsPage() {
           background: "#232946",
         }}
       >
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Variants</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Variants</h1>
         <Button label="Add New Variant" icon="pi pi-plus" className="p-button-success" onClick={openAddSidebar} />
       </div>
 
@@ -87,7 +87,7 @@ export default function AdminVariantsPage() {
           <thead>
             <tr style={{ borderBottom: "2px solid #444" }}>
               <th style={{ textAlign: "left", padding: "10px" }}>Variant Name</th>
-              <th style={{ textAlign: "left", padding: "10px" }}>Brand</th>
+              <th style={{ textAlign: "left", padding: "10px" }}>model</th>
               <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
             </tr>
           </thead>
@@ -95,7 +95,7 @@ export default function AdminVariantsPage() {
             {currentVariants.map((variant) => (
               <tr key={variant.id} style={{ borderBottom: "1px solid #444" }}>
                 <td style={{ padding: "10px" }}>{variant.name}</td>
-                <td style={{ padding: "10px" }}>{variant.brand}</td>
+                <td style={{ padding: "10px" }}>{variant.model}</td>
                 <td style={{ textAlign: "center", padding: "10px" }}>
                   <Button
                     icon="pi pi-pencil"
@@ -149,11 +149,11 @@ export default function AdminVariantsPage() {
             />
           </label>
           <label>
-            Brand:
+            model
             <input
               type="text"
-              value={editVariant?.brand || ""}
-              onChange={(e) => setEditVariant({ ...editVariant, brand: e.target.value })}
+              value={editVariant?.model || ""}
+              onChange={(e) => setEditVariant({ ...editVariant, model: e.target.value })}
               required
               style={{
                 width: "100%",
@@ -174,3 +174,4 @@ export default function AdminVariantsPage() {
     </div>
   );
 }
+

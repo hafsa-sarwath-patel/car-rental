@@ -80,7 +80,7 @@ export default function AdminModelsPage() {
           background: "#232946",
         }}
       >
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Models</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Models</h1>
         <Button
           label="Add New Model"
           icon="pi pi-plus"
