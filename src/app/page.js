@@ -4,19 +4,50 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState(""); // 🔹 changed
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      alert("Login successful!");
-    
-    } else {
-      alert("Please enter email and password.");
-      setError("Please enter email and password.");
+
+    if (!username || !password) {
+      setError("Please enter username and password.");
+      return;
+    }
+
+    try {
+      // 🔹 Hit the auth API with username instead of email
+      const res = await fetch("/api/v1/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.message || "Login failed");
+        return;
+      }
+
+      const token = body.data; // ✅ token from payload
+
+      // ✅ Store token in multiple places
+      try {
+        localStorage.setItem("token", token);
+      } catch {}
+      try {
+        sessionStorage.setItem("token", token);
+      } catch {}
+
+      // If Redux is used:
+      // dispatch(authActions.setToken(token));
+
+      // Cookie is already set by backend → middleware works
+      router.push("/admin/dashboard");
+    } catch {
+      setError("Something went wrong!");
     }
   };
 
@@ -59,16 +90,16 @@ export default function LoginPage() {
               </div>
             )}
             <label
-              htmlFor="email"
+              htmlFor="username"
               style={{ display: "block", marginBottom: 6, color: "#1e3c72" }}
             >
-              Email
+              Username
             </label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               style={{
                 width: "100%",
@@ -105,7 +136,6 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-             onClick={() => router.push("/admin/dashboard")}
             style={{
               width: "100%",
               padding: "10px 0",

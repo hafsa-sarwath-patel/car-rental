@@ -122,6 +122,53 @@ exports.Prisma.UsersScalarFieldEnum = {
   isAvailable: 'isAvailable'
 };
 
+exports.Prisma.BrandScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  image: 'image'
+};
+
+exports.Prisma.ModelScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  brandId: 'brandId'
+};
+
+exports.Prisma.VariantScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  modelId: 'modelId'
+};
+
+exports.Prisma.StateScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+};
+
+exports.Prisma.CityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  stateId: 'stateId'
+};
+
+exports.Prisma.ChecklistCategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name'
+};
+
+exports.Prisma.ChecklistOptionScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  categoryId: 'categoryId'
+};
+
+exports.Prisma.SettingScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  value: 'value',
+  dataType: 'dataType'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -141,7 +188,15 @@ exports.Role = exports.$Enums.Role = {
 };
 
 exports.Prisma.ModelName = {
-  users: 'users'
+  users: 'users',
+  Brand: 'Brand',
+  Model: 'Model',
+  Variant: 'Variant',
+  State: 'State',
+  City: 'City',
+  ChecklistCategory: 'ChecklistCategory',
+  ChecklistOption: 'ChecklistOption',
+  Setting: 'Setting'
 };
 
 /**
