@@ -22,24 +22,33 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include", // ✅ allow browser to receive & store cookies
+        credentials: "include",
       });
 
-      const body = await res.json();
+      let body;
+      try {
+        body = await res.json();
+      } catch {
+        const text = await res.text();
+        console.error("Non-JSON response from API:", text);
+        setError("Server returned an invalid response. Check console for details.");
+        return;
+      }
+
       if (!res.ok) {
         setError(body.message || "Login failed");
         return;
       }
 
       const token = body.data;
-
-      // Optional: keep a copy in local/session storage if you also use Bearer tokens
-      try { localStorage.setItem("token", token); } catch {}
-      try { sessionStorage.setItem("token", token); } catch {}
+      localStorage.setItem("token", token);
+      sessionStorage.setItem("token", token);
 
       router.push("/admin/dashboard");
-    } catch {
-      setError("Something went wrong!");
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Network error or server unreachable");
     }
   };
 
@@ -63,9 +72,7 @@ export default function LoginPage() {
           padding: "32px 24px",
         }}
       >
-        <h2 style={{ textAlign: "center", color: "#2a5298", marginBottom: 24 }}>
-          Login
-        </h2>
+        <h2 style={{ textAlign: "center", color: "#2a5298", marginBottom: 24 }}>Login</h2>
         <form onSubmit={handleLogin}>
           {error && (
             <div
@@ -81,10 +88,7 @@ export default function LoginPage() {
             </div>
           )}
           <div style={{ marginBottom: 16 }}>
-            <label
-              htmlFor="username"
-              style={{ display: "block", marginBottom: 6, color: "#1e3c72" }}
-            >
+            <label htmlFor="username" style={{ display: "block", marginBottom: 6, color: "#1e3c72" }}>
               Username
             </label>
             <input
@@ -103,10 +107,7 @@ export default function LoginPage() {
             />
           </div>
           <div style={{ marginBottom: 20 }}>
-            <label
-              htmlFor="password"
-              style={{ display: "block", marginBottom: 6, color: "#1e3c72" }}
-            >
+            <label htmlFor="password" style={{ display: "block", marginBottom: 6, color: "#1e3c72" }}>
               Password
             </label>
             <input

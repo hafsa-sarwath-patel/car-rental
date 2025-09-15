@@ -14,28 +14,49 @@ export default function AdminDashboard() {
     bookings: 0,
   });
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     async function fetchStats() {
       try {
-        const [usersRes, brandsRes, bookingsRes] = await Promise.all([
-          fetch("/api/v1/users"),
-          fetch("/api/v1/brands"),
-          fetch("/api/v1/bookings"),
-        ]);
+        const endpoints = ["/api/v1/users", "/api/v1/brands", "/api/v1/bookings"];
 
-        const [users, brands, bookings] = await Promise.all([
-          usersRes.json(),
-          brandsRes.json(),
-          bookingsRes.json(),
-        ]);
+        const results = await Promise.all(
+          endpoints.map(async (url) => {
+            try {
+              const res = await fetch(url);
+
+              if (!res.ok) {
+                console.error(`Fetch failed for ${url}: status ${res.status}`);
+                return [];
+              }
+
+              try {
+                return await res.json();
+              } catch {
+                const text = await res.text();
+                console.error(`Non-JSON response from ${url}:`, text);
+                return [];
+              }
+            } catch (err) {
+              console.error(`Network error for ${url}:`, err);
+              return [];
+            }
+          })
+        );
+
+        const [users, brands, bookings] = results;
 
         setStats({
-          users: users.length,
-          brands: brands.length,
-          bookings: bookings.length,
+          users: Array.isArray(users) ? users.length : 0,
+          brands: Array.isArray(brands) ? brands.length : 0,
+          bookings: Array.isArray(bookings) ? bookings.length : 0,
         });
+
       } catch (err) {
         console.error("Error fetching stats:", err);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -64,6 +85,7 @@ export default function AdminDashboard() {
     {
       title: "Settings",
       icon: "pi pi-cog",
+      total: null,
       url: "/admin/settings",
     },
   ];
@@ -82,58 +104,67 @@ export default function AdminDashboard() {
       <h1 style={{ color: "#fff", marginBottom: 32, fontWeight: 700, fontSize: 32 }}>
         Admin Dashboard
       </h1>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "2rem",
-          width: "100%",
-          maxWidth: 1000,
-        }}
-      >
-        {cards.map((card) => (
-          <Card
-            key={card.title}
-            title={
-              <span style={{ color: "#2a5298", fontWeight: 600 }}>
-                <i className={card.icon} style={{ marginRight: 10 }} />
-                {card.title}
-              </span>
-            }
-            style={{
-              background: "#232946",
-              color: "#fff",
-              borderRadius: 12,
-              boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
-              border: "none",
-              minHeight: 200,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              padding: "1rem",
-            }}
-            footer={
-              <Button
-                label="Go"
-                icon="pi pi-arrow-right"
-                className="p-button-sm"
-                style={{
-                  background: "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)",
-                  border: "none",
-                  color: "#fff",
-                  fontWeight: 600,
-                  marginTop: 16,
-                }}
-                onClick={() => router.push(card.url)}
-              />
-            }
-          >
-            <h2 style={{ fontSize: 24, margin: "1rem 0", color: "#fff" }}>
-              Total: {card.total}
-            </h2>
-          </Card>
-        ))}
-      </div>
+
+      {loading ? (
+        <p style={{ color: "#fff", fontSize: 18 }}>Loading stats...</p>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "2rem",
+            width: "100%",
+            maxWidth: 1000,
+          }}
+        >
+          {cards.map((card) => (
+            <Card
+              key={card.title}
+              title={
+                <span style={{ color: "#2a5298", fontWeight: 600 }}>
+                  <i className={card.icon} style={{ marginRight: 10 }} />
+                  {card.title}
+                </span>
+              }
+              style={{
+                background: "#232946",
+                color: "#fff",
+                borderRadius: 12,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+                border: "none",
+                minHeight: 200,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                padding: "1rem",
+              }}
+              footer={
+                <Button
+                  label="Go"
+                  icon="pi pi-arrow-right"
+                  className="p-button-sm"
+                  style={{
+                    background: "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)",
+                    border: "none",
+                    color: "#fff",
+                    fontWeight: 600,
+                    marginTop: 16,
+                  }}
+                  onClick={() => router.push(card.url)}
+                />
+              }
+            >
+              {card.total !== null ? (
+                <h2 style={{ fontSize: 24, margin: "1rem 0", color: "#fff" }}>
+                  Total: {card.total}
+                </h2>
+              ) : (
+                <h2 style={{ fontSize: 24, margin: "1rem 0", color: "#fff" }}>—</h2>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
