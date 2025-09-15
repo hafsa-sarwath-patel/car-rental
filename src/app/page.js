@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState(""); // 🔹 changed
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -18,11 +18,11 @@ export default function LoginPage() {
     }
 
     try {
-      // 🔹 Hit the auth API with username instead of email
       const res = await fetch("/api/v1/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
+        credentials: "include", // ✅ allow browser to receive & store cookies
       });
 
       const body = await res.json();
@@ -31,20 +31,12 @@ export default function LoginPage() {
         return;
       }
 
-      const token = body.data; // ✅ token from payload
+      const token = body.data;
 
-      // ✅ Store token in multiple places
-      try {
-        localStorage.setItem("token", token);
-      } catch {}
-      try {
-        sessionStorage.setItem("token", token);
-      } catch {}
+      // Optional: keep a copy in local/session storage if you also use Bearer tokens
+      try { localStorage.setItem("token", token); } catch {}
+      try { sessionStorage.setItem("token", token); } catch {}
 
-      // If Redux is used:
-      // dispatch(authActions.setToken(token));
-
-      // Cookie is already set by backend → middleware works
       router.push("/admin/dashboard");
     } catch {
       setError("Something went wrong!");
@@ -75,20 +67,20 @@ export default function LoginPage() {
           Login
         </h2>
         <form onSubmit={handleLogin}>
+          {error && (
+            <div
+              style={{
+                background: "#f8d7da",
+                color: "#721c24",
+                padding: "10px",
+                borderRadius: 6,
+                marginBottom: 16,
+              }}
+            >
+              {error}
+            </div>
+          )}
           <div style={{ marginBottom: 16 }}>
-            {error && (
-              <div
-                style={{
-                  background: "#f8d7da",
-                  color: "#721c24",
-                  padding: "10px",
-                  borderRadius: 6,
-                  marginBottom: 16,
-                }}
-              >
-                {error}
-              </div>
-            )}
             <label
               htmlFor="username"
               style={{ display: "block", marginBottom: 6, color: "#1e3c72" }}
@@ -106,7 +98,6 @@ export default function LoginPage() {
                 padding: "8px 12px",
                 borderRadius: 6,
                 border: "1px solid #b0b8c1",
-                outline: "none",
                 fontSize: 16,
               }}
             />
@@ -129,7 +120,6 @@ export default function LoginPage() {
                 padding: "8px 12px",
                 borderRadius: 6,
                 border: "1px solid #b0b8c1",
-                outline: "none",
                 fontSize: 16,
               }}
             />
@@ -140,7 +130,7 @@ export default function LoginPage() {
               width: "100%",
               padding: "10px 0",
               background: "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)",
-              color: "#fffffff5",
+              color: "#ffffff",
               border: "none",
               borderRadius: 6,
               fontWeight: 600,
