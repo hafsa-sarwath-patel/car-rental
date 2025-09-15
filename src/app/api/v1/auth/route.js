@@ -28,20 +28,20 @@ export async function POST(req) {
       );
     }
 
-    // 3️⃣ Generate JWT (use role, not role_id)
+    // 3️⃣ Generate JWT
     const token = await generateToken({ id: user.id, role: user.role });
 
     // 4️⃣ Send response + set cookie
     const res = NextResponse.json({
       message: "Login Successful",
-      data: token,
+      data: token, // optional, cookie is enough
       statusCode: 200,
     });
 
     res.cookies.set("jwt", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+      sameSite: "lax", // works for cross-origin in deployment
       path: "/",
       maxAge: 60 * 60 * 24, // 1 day
     });

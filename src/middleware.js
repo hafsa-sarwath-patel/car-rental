@@ -4,18 +4,17 @@ import { verifyToken } from "@/util/jwt-access";
 export async function middleware(req) {
   const url = req.nextUrl;
 
-  // ✅ Allow the login page and the auth API
-  if (url.pathname === "/login" || url.pathname === "/api/v1/auth") {
+  // ✅ Allow login page & auth API
+  if (url.pathname.startsWith("/login") || url.pathname.startsWith("/api/v1/auth")) {
     return NextResponse.next();
   }
 
-  // 🔒 Check JWT in cookie or Authorization header (Bearer)
+  // 🔒 Get JWT from cookie or Authorization header
   const cookieToken = req.cookies.get("jwt")?.value;
   const authHeader = req.headers.get("authorization");
   const headerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice("Bearer ".length)
     : null;
-
   const token = cookieToken || headerToken;
 
   // Only enforce on protected paths
@@ -26,20 +25,28 @@ export async function middleware(req) {
   if (!isProtected) return NextResponse.next();
 
   if (!token) {
-    // Not authenticated → send to login
+    // Not authenticated → redirect to login
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const payload = await verifyToken(token);
+  // Verify token safely
+  let payload;
+  try {
+    payload = await verifyToken(token);
+  } catch (err) {
+    console.error("Token verification failed:", err);
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   if (!payload) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // ✅ Token valid, continue
   return NextResponse.next();
 }
 
-// 🔧 Protect only what you need blocked.
-// (Login + /api/v1/auth are implicitly allowed because they’re not matched.)
+// 🔧 Protect specific paths
 export const config = {
   matcher: [
     "/api/users/:path*",
