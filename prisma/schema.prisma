@@ -35,7 +35,7 @@ model users {
   username    String   @unique
   email       String?
   password    String
-  role        Role
+  role        Role?
   isAvailable Boolean  @default(true)
   createdAt   DateTime? @default(now())
   updatedAt   DateTime? @updatedAt
