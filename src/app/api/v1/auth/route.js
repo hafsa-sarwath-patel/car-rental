@@ -19,7 +19,7 @@ export async function POST(req) {
       );
     }
 
-    // 2️⃣ Verify password (compare with hashed)
+    // 2️⃣ Verify password
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return NextResponse.json(
@@ -28,10 +28,10 @@ export async function POST(req) {
       );
     }
 
-    // 3️⃣ Generate JWT
-    const token = await generateToken({ id: user.id, role: user.role_id });
+    // 3️⃣ Generate JWT (use role, not role_id)
+    const token = await generateToken({ id: user.id, role: user.role });
 
-    // 4️⃣ Send response + cookie
+    // 4️⃣ Send response + set cookie
     const res = NextResponse.json({
       message: "Login Successful",
       data: token,

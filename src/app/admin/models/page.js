@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { models as initialModels } from "./data";
+import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
@@ -10,64 +9,131 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
 export default function AdminModelsPage() {
-  const [models, setModels] = useState(initialModels);
+  const [models, setModels] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editModel, setEditModel] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const toast = useRef(null);
+
+  // Fetch models
+  const loadModels = async () => {
+    try {
+      const res = await fetch("/api/v1/models");
+      if (!res.ok) throw new Error("Failed to fetch models");
+      const data = await res.json();
+      setModels(data);
+    } catch (err) {
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to load models",
+        life: 3000,
+      });
+    }
+  };
+
+  // Fetch brands for dropdown
+  const loadBrands = async () => {
+    try {
+      const res = await fetch("/api/v1/brands");
+      if (!res.ok) throw new Error("Failed to fetch brands");
+      const data = await res.json();
+      setBrands(data);
+    } catch {
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to load brands",
+        life: 3000,
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadModels();
+    loadBrands();
+  }, []);
+
   const totalPages = Math.ceil(models.length / itemsPerPage);
+  const currentModels = models.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-  const toast = useRef(null); // Toast reference
-
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentModels = models.slice(indexOfFirst, indexOfLast);
-
-  // Open Add Model Sidebar
   const openAddSidebar = () => {
-    setEditModel({ id: null, name: "", brand: "" });
+    setEditModel({ id: null, name: "", brandId: brands[0]?.id || "" });
     setSidebarVisible(true);
   };
 
-  // Open Edit Model Sidebar
   const openEditSidebar = (model) => {
     setEditModel(model);
     setSidebarVisible(true);
   };
 
-  // Save/Add Model
-  const handleSave = (e) => {
+  // Save/Add Model via API
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editModel.id) {
-      // Update existing model
-      setModels((prev) => prev.map((m) => (m.id === editModel.id ? editModel : m)));
-      toast.current.show({ severity: "success", summary: "Updated", detail: "Model updated successfully", life: 3000 });
-    } else {
-      // Add new model
-      const newModel = { ...editModel, id: Date.now() };
-      setModels((prev) => [...prev, newModel]);
-      toast.current.show({ severity: "success", summary: "Added", detail: "New model added", life: 3000 });
+    try {
+      const method = editModel.id ? "PUT" : "POST";
+      const url = editModel.id
+        ? `/api/v1/models/${editModel.id}`
+        : "/api/v1/models";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editModel),
+      });
+
+      if (!res.ok) throw new Error("Failed to save model");
+
+      toast.current.show({
+        severity: "success",
+        summary: editModel.id ? "Updated" : "Added",
+        detail: `Model ${editModel.id ? "updated" : "added"} successfully`,
+        life: 3000,
+      });
+
+      setSidebarVisible(false);
+      await loadModels();
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Save failed",
+        life: 3000,
+      });
     }
-    setSidebarVisible(false);
   };
 
-  // Delete Model
-  const handleDelete = () => {
-    setModels((prev) => prev.filter((m) => m.id !== editModel.id));
-    toast.current.show({ severity: "warn", summary: "Deleted", detail: "Model deleted successfully", life: 3000 });
-    setSidebarVisible(false);
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`/api/v1/models/${editModel.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      toast.current.show({
+        severity: "warn",
+        summary: "Deleted",
+        detail: "Model deleted successfully",
+        life: 3000,
+      });
+      setSidebarVisible(false);
+      await loadModels();
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Delete failed",
+        life: 3000,
+      });
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#a4aeedff",
-        display: "flex",
-        flexDirection: "column",
-        color: "#fff",
-      }}
-    >
+    <div style={{ minHeight: "100vh", background: "#a4aeedff", color: "#fff" }}>
       <Toast ref={toast} />
 
       {/* Header */}
@@ -94,17 +160,17 @@ export default function AdminModelsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #444" }}>
-              <th style={{ textAlign: "left", padding: "10px" }}>Model Name</th>
-              <th style={{ textAlign: "left", padding: "10px" }}>Brand</th>
-              <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
+              <th style={{ padding: 10 }}>Model Name</th>
+              <th style={{ padding: 10 }}>Brand</th>
+              <th style={{ padding: 10, textAlign: "center" }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {currentModels.map((model) => (
               <tr key={model.id} style={{ borderBottom: "1px solid #444" }}>
-                <td style={{ padding: "10px" }}>{model.name}</td>
-                <td style={{ padding: "10px" }}>{model.brand}</td>
-                <td style={{ textAlign: "center", padding: "10px" }}>
+                <td style={{ padding: 10 }}>{model.name}</td>
+                <td style={{ padding: 10 }}>{model.brandName}</td>
+                <td style={{ padding: 10, textAlign: "center" }}>
                   <Button
                     icon="pi pi-pencil"
                     className="p-button-rounded p-button-info p-button-sm"
@@ -117,26 +183,26 @@ export default function AdminModelsPage() {
         </table>
 
         {/* Pagination */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
           <Button
             label="Prev"
             disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => prev - 1)}
+            onClick={() => setCurrentPage((p) => p - 1)}
             className="p-button-text"
           />
           <span style={{ margin: "0 10px", alignSelf: "center" }}>
-            Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalPages || 1}
           </span>
           <Button
             label="Next"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => prev + 1)}
+            disabled={currentPage === totalPages || totalPages === 0}
+            onClick={() => setCurrentPage((p) => p + 1)}
             className="p-button-text"
           />
         </div>
       </div>
 
-      {/* Sidebar (Add/Edit) */}
+      {/* Sidebar */}
       <Sidebar
         visible={sidebarVisible}
         onHide={() => setSidebarVisible(false)}
@@ -148,6 +214,7 @@ export default function AdminModelsPage() {
           onSubmit={handleSave}
         >
           <h2>{editModel?.id ? "Edit Model" : "Add New Model"}</h2>
+
           <label>
             Model Name:
             <input
@@ -155,30 +222,24 @@ export default function AdminModelsPage() {
               value={editModel?.name || ""}
               onChange={(e) => setEditModel({ ...editModel, name: e.target.value })}
               required
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: 4,
-                border: "1px solid #ccc",
-                marginTop: 4,
-              }}
+              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
             />
           </label>
+
           <label>
             Brand:
-            <input
-              type="text"
-              value={editModel?.brand || ""}
-              onChange={(e) => setEditModel({ ...editModel, brand: e.target.value })}
+            <select
+              value={editModel?.brandId || ""}
+              onChange={(e) => setEditModel({ ...editModel, brandId: e.target.value })}
               required
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: 4,
-                border: "1px solid #ccc",
-                marginTop: 4,
-              }}
-            />
+              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
+            >
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />

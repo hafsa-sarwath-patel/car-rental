@@ -1,158 +1,205 @@
 "use client";
-import { useState, useRef } from "react";
-import { users as initialUsers } from "./data";
+
+import { useState, useEffect, useRef } from "react";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
+import { Dropdown } from "primereact/dropdown";
+
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState(initialUsers);
-  const [editVisible, setEditVisible] = useState(false);
-  const [editUser, setEditUser] = useState(null);
   const toast = useRef(null);
 
-  // Show Toast Notification
-  const showToast = (severity, summary, detail) => {
+  const [users, setUsers] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [lazyParams, setLazyParams] = useState({
+    first: 0,
+    rows: 5,
+    page: 1,
+    filters: {},
+  });
+  const [editVisible, setEditVisible] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Logged-in user role
+  const currentUserRole = "ADMIN";
+
+  const roleOptions = [
+    { label: "ADMIN", value: "ADMIN" },
+    { label: "USER", value: "USER" },
+    { label: "DRIVER", value: "DRIVER" },
+    { label: "MECHANIC", value: "MECHANIC" },
+    { label: "PROVIDER", value: "PROVIDER" },
+    { label: "CUSTOMER", value: "CUSTOMER" },
+  ];
+
+  const showToast = (severity, summary, detail) =>
     toast.current.show({ severity, summary, detail, life: 3000 });
-  };
 
-  // Edit existing user
-  const handleEdit = (user) => {
-    setEditUser(user);
-    setEditVisible(true);
-  };
-
-  // Add new user
-  const handleAddNew = () => {
-    setEditUser({ id: null, name: "", email: "", role: "" });
-    setEditVisible(true);
-  };
-
-  // Save user (new or existing)
-  const handleSave = (e) => {
-    e.preventDefault();
-
-    if (editUser.id) {
-      // Update existing user
-      setUsers((prev) =>
-        prev.map((u) => (u.id === editUser.id ? editUser : u))
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/v1/users?page=${lazyParams.page}&limit=${lazyParams.rows}`,
+        { cache: "no-store" }
       );
-      showToast("success", "User Updated", `${editUser.name} has been updated`);
-    } else {
-      // Add new user
-      const newUser = { ...editUser, id: Date.now() };
-      setUsers((prev) => [...prev, newUser]);
-      showToast("success", "User Added", `${newUser.name} has been added`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Load failed");
+      setUsers(json.data);
+      setTotalRecords(json.meta.total);
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Fetch Error", err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setEditVisible(false);
   };
 
+  useEffect(() => {
+    loadUsers();
+  }, [lazyParams]);
 
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const method = editUser?.id ? "PUT" : "POST";
+    const url = editUser?.id
+      ? `/api/v1/users/${editUser.id}`
+      : `/api/v1/users`;
 
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#a4aeedff",
-        display: "flex",
-        flexDirection: "column",
-        color: "#fff",
-      }}
-    >
-      <Toast ref={toast} />
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editUser),
+      });
+      if (!res.ok) throw new Error(`${method} failed`);
 
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "1rem 2rem",
-          background: "#232946",
-        }}
-      >
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Manage Users</h1>
+      showToast(
+        "success",
+        "Success",
+        editUser?.id ? "User updated" : "User added"
+      );
+      setEditVisible(false);
+      loadUsers();
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Save Failed", err.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this user?")) return;
+    try {
+      const res = await fetch(`/api/v1/users/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      showToast("success", "User Deleted", `User ${id} removed`);
+      loadUsers();
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Delete Failed", err.message);
+    }
+  };
+
+  // Show Edit/Delete only for rows with role === ADMIN
+  const actionTemplate = (row) => {
+    if (row.role !== "ADMIN") return null;
+
+    return (
+      <div style={{ display: "flex", gap: "0.5rem" }}>
         <Button
-          label="Add New User"
-          icon="pi pi-plus"
-          className="p-button-success"
-          onClick={handleAddNew}
+          icon="pi pi-pencil"
+          className="p-button-rounded p-button-info p-button-sm"
+          onClick={() => {
+            setEditUser(row);
+            setEditVisible(true);
+          }}
+        />
+        <Button
+          icon="pi pi-trash"
+          className="p-button-rounded p-button-danger p-button-sm"
+          onClick={() => handleDelete(row.id)}
         />
       </div>
+    );
+  };
 
-      {/* User List */}
+  return (
+    <div style={{ padding: "1rem" }}>
+      <Toast ref={toast} />
+
       <div
         style={{
-          flex: 1,
-          width: "100%",
-          background: "#232946",
-          padding: "2rem",
-          boxSizing: "border-box",
+          marginBottom: "1rem",
+          display: "flex",
+          justifyContent: "space-between",
         }}
       >
-        {/* Table Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontWeight: "bold",
-            borderBottom: "2px solid #555",
-            paddingBottom: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          <span style={{ flex: 1 }}>ID</span>
-          <span style={{ flex: 2 }}>Name</span>
-          <span style={{ flex: 2 }}>email</span>
-          <span style={{ flex: 2 }}>Role</span>
-          <span style={{ flex: 2, textAlign: "right" }}>Actions</span>
-        </div>
-
-        {/* User Rows */}
-        {users.map((user) => (
-          <div
-            key={user.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "12px 0",
-              borderBottom: "1px solid #444",
+        <h2>Manage Users</h2>
+        {currentUserRole === "ADMIN" && (
+          <Button
+            label="Add New User"
+            icon="pi pi-plus"
+            className="p-button-success"
+            onClick={() => {
+              setEditUser({
+                name: "",
+                username: "",
+                email: "",
+                password: "",
+                role: "",
+              });
+              setEditVisible(true);
             }}
-          >
-            <span style={{ flex: 1 }}>{user.id}</span>
-            <span style={{ flex: 2 }}>{user.name}</span>
-             <span style={{ flex: 2 }}>{user.email}</span>
-            <span style={{ flex: 2 }}>{user.role}</span>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                flex: 2,
-                justifyContent: "flex-end",
-              }}
-            >
-              {user.role !== "customer" && user.role !== "hoster" && (
-                <Button
-                  label="Edit"
-                  icon="pi pi-pencil"
-                  className="p-button-sm p-button-info"
-                  onClick={() => handleEdit(user)}
-                />
-              )}
-
-           
-            </div>
-          </div>
-        ))}
+          />
+        )}
       </div>
 
-      {/* Sidebar for Add/Edit */}
+      <DataTable
+        value={users}
+        paginator
+        lazy
+        loading={loading}
+        first={lazyParams.first}
+        rows={lazyParams.rows}
+        totalRecords={totalRecords}
+        onPage={(e) =>
+          setLazyParams({
+            ...lazyParams,
+            first: e.first,
+            rows: e.rows,
+            page: e.page + 1,
+          })
+        }
+        responsiveLayout="scroll"
+        stripedRows
+      >
+        <Column field="name" header="Name" sortable />
+        <Column field="username" header="Username" sortable />
+        <Column field="email" header="Email" sortable />
+        <Column
+          field="role"
+          header="Role"
+          sortable
+          body={(row) => row.role || "N/A"}
+        />
+        <Column
+          field="isAvailable"
+          header="Available"
+          body={(r) => (r.isAvailable ? "Yes" : "No")}
+        />
+        <Column
+          body={actionTemplate}
+          header="Actions"
+          style={{ textAlign: "center", width: "8rem" }}
+        />
+      </DataTable>
+
       <Sidebar
         visible={editVisible}
         onHide={() => setEditVisible(false)}
@@ -163,70 +210,60 @@ export default function AdminUsersPage() {
           style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
           onSubmit={handleSave}
         >
-          <h2>{editUser?.id ? `Edit User: ${editUser.name}` : "Add New User"}</h2>
+          <h3>{editUser?.id ? "Edit User" : "Add New User"}</h3>
 
-          <label>
-            Name:
-            <input
-              type="text"
-              value={editUser?.name || ""}
-              onChange={(e) =>
-                setEditUser({ ...editUser, name: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: 4,
-                border: "1px solid #ccc",
-                marginTop: 4,
-              }}
-              required
-            />
-          </label>
+          <input
+            type="text"
+            placeholder="Name"
+            value={editUser?.name || ""}
+            onChange={(e) =>
+              setEditUser({ ...editUser, name: e.target.value })
+            }
+            required
+          />
 
-          <label>
-            Email:
-            <input
-              type="email"
-              value={editUser?.email || ""}
-              onChange={(e) =>
-                setEditUser({ ...editUser, email: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: 4,
-                border: "1px solid #ccc",
-                marginTop: 4,
-              }}
-              required
-            />
-          </label>
+          <input
+            type="text"
+            placeholder="Username"
+            value={editUser?.username || ""}
+            onChange={(e) =>
+              setEditUser({ ...editUser, username: e.target.value })
+            }
+            required
+          />
 
-          <label>
-            Role:
-            <input
-              type="text"
-              value={editUser?.role || ""}
-              onChange={(e) =>
-                setEditUser({ ...editUser, role: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "8px",
-                borderRadius: 4,
-                border: "1px solid #ccc",
-                marginTop: 4,
-              }}
-            />
-          </label>
+          <input
+            type="email"
+            placeholder="Email"
+            value={editUser?.email || ""}
+            onChange={(e) =>
+              setEditUser({ ...editUser, email: e.target.value })
+            }
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={editUser?.password || ""}
+            onChange={(e) =>
+              setEditUser({ ...editUser, password: e.target.value })
+            }
+            required={!editUser?.id}
+          />
+
+          <Dropdown
+            value={editUser?.role || ""}
+            options={roleOptions}
+            onChange={(e) => setEditUser({ ...editUser, role: e.value })}
+            placeholder="Select Role"
+            required
+          />
 
           <Button
             type="submit"
             label="Save"
             icon="pi pi-check"
             className="p-button-success"
-            style={{ alignSelf: "flex-start" }}
           />
         </form>
       </Sidebar>

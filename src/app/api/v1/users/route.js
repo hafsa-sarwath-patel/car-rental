@@ -2,60 +2,81 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// GET all users
-export async function GET() {
-  const users = await prisma.users.findMany({
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      role_id: true,
-      isAvailable: true,
-    },
-  });
-  return NextResponse.json(users);
+/** ── GET: list users with optional pagination ── **/
+export async function GET(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const pageParam = searchParams.get("page");
+    const limitParam = searchParams.get("limit");
+
+    let data, total;
+
+    if (pageParam && limitParam) {
+      const page = parseInt(pageParam, 10);
+      const limit = parseInt(limitParam, 10);
+      const skip = (page - 1) * limit;
+
+      [data, total] = await Promise.all([
+        prisma.users.findMany({
+          skip,
+          take: limit,
+          orderBy: { name: "asc" },
+        }),
+        prisma.users.count(),
+      ]);
+
+      return NextResponse.json({
+        data,
+        meta: { total, page, limit },
+      });
+    } else {
+      data = await prisma.users.findMany({ orderBy: { name: "asc" } });
+      total = data.length;
+
+      return NextResponse.json({
+        data,
+        meta: { total },
+      });
+    }
+  } catch (err) {
+    console.error("GET /users error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
 }
 
-// Create new user (Register)
+/** ── POST: create a new user ── **/
 export async function POST(req) {
   try {
-    const { name, username, password, role_id } = await req.json();
+    const { name, username, email, password, role } = await req.json();
 
-    // check duplicate username
-    const existing = await prisma.users.findUnique({
-      where: { username },
-    });
-    if (existing) {
+    // 1️⃣ Validate required fields
+    if (!name || !username || !password || !role) {
       return NextResponse.json(
-        { message: "Username already taken", statusCode: 400 },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // hash password
+    // 2️⃣ Check if username already exists
+    const existingUser = await prisma.users.findUnique({ where: { username } });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "Username already taken" },
+        { status: 400 }
+      );
+    }
+
+    // 3️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.users.create({
-      data: {
-        name,
-        username,
-        password: hashedPassword,
-        role_id: role_id || "USER",
-      },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        role_id: true,
-        isAvailable: true,
-      },
+    // 4️⃣ Create new user
+    const newUser = await prisma.users.create({
+      data: { name, username, email, password: hashedPassword, role },
     });
 
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json(newUser, { status: 201 });
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message, statusCode: 400 },
-      { status: 400 }
-    );
+    console.error("POST /users error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

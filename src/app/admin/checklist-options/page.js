@@ -1,58 +1,153 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { checklists as initialChecklists } from "./data";
+import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import "primereact/resources/themes/lara-light-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
 
 export default function AdminChecklistsPage() {
-  const [checklists, setChecklists] = useState(initialChecklists);
+  const [checklists, setChecklists] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editChecklist, setEditChecklist] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const toast = useRef(null);
 
   const itemsPerPage = 5;
-  const totalPages = Math.ceil(checklists.length / itemsPerPage);
 
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentChecklists = checklists.slice(indexOfFirst, indexOfLast);
+  // Load checklist options
+  const loadChecklists = async () => {
+    try {
+      const res = await fetch("/api/v1/checklistoption");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setChecklists(data);
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to load checklist options",
+        life: 3000,
+      });
+    }
+  };
+
+  // Load categories for dropdown
+  const loadCategories = async () => {
+    try {
+      const res = await fetch("/api/v1/checklistcategory");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setCategories(data);
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to load categories",
+        life: 3000,
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadChecklists();
+    loadCategories();
+  }, []);
 
   const openAddSidebar = () => {
-    setEditChecklist({ id: null, name: "", category: "" });
+    setEditChecklist({ id: null, name: "", categoryId: "" });
     setSidebarVisible(true);
   };
 
   const openEditSidebar = (checklist) => {
-    setEditChecklist(checklist);
+    setEditChecklist({
+      id: checklist.id,
+      name: checklist.name,
+      categoryId: checklist.category?.id || "",
+    });
     setSidebarVisible(true);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editChecklist.id) {
-      setChecklists((prev) =>
-        prev.map((c) => (c.id === editChecklist.id ? editChecklist : c))
-      );
-      toast.current.show({ severity: "success", summary: "Updated", detail: "Checklist updated successfully" });
-    } else {
-      const newChecklist = { ...editChecklist, id: Date.now() };
-      setChecklists((prev) => [...prev, newChecklist]);
-      toast.current.show({ severity: "success", summary: "Added", detail: "Checklist added successfully" });
+    try {
+      const method = editChecklist.id ? "PUT" : "POST";
+      const url = editChecklist.id
+        ? `/api/v1/checklistoption/${editChecklist.id}`
+        : "/api/v1/checklistoption";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editChecklist.name,
+          categoryId: editChecklist.categoryId,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast.current.show({
+        severity: "success",
+        summary: editChecklist.id ? "Updated" : "Added",
+        detail: `Checklist option ${editChecklist.id ? "updated" : "added"} successfully`,
+        life: 3000,
+      });
+
+      setSidebarVisible(false);
+      await loadChecklists();
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Save failed",
+        life: 3000,
+      });
     }
-    setSidebarVisible(false);
   };
 
-  const handleDelete = () => {
-    setChecklists((prev) => prev.filter((c) => c.id !== editChecklist.id));
-    toast.current.show({ severity: "warn", summary: "Deleted", detail: "Checklist deleted successfully" });
-    setSidebarVisible(false);
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`/api/v1/checklistoption/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.current.show({
+        severity: "warn",
+        summary: "Deleted",
+        detail: "Checklist option deleted",
+        life: 3000,
+      });
+      await loadChecklists();
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Delete failed",
+        life: 3000,
+      });
+    }
   };
+
+  const actionBodyTemplate = (rowData) => (
+    <div style={{ display: "flex", gap: "0.5rem" }}>
+      <Button
+        icon="pi pi-pencil"
+        className="p-button-sm p-button-info"
+        onClick={() => openEditSidebar(rowData)}
+      />
+      <Button
+        icon="pi pi-trash"
+        className="p-button-sm p-button-danger"
+        onClick={() => handleDelete(rowData.id)}
+      />
+    </div>
+  );
+
+  const totalPages = Math.ceil(checklists.length / itemsPerPage);
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentChecklists = checklists.slice(indexOfFirst, indexOfLast);
 
   return (
     <div style={{ minHeight: "100vh", background: "#a4aeedff", display: "flex", flexDirection: "column", color: "#fff" }}>
@@ -60,32 +155,17 @@ export default function AdminChecklistsPage() {
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 2rem", background: "#232946" }}>
-        <h1 style={{ fontWeight: 700, fontSize: 28 }}> Checklists options</h1>
-        <Button label="Add New Checklist" icon="pi pi-plus" className="p-button-success" onClick={openAddSidebar} />
+        <h1 style={{ fontWeight: 700, fontSize: 28 }}>Checklist Options</h1>
+        <Button label="Add New Option" icon="pi pi-plus" className="p-button-success" onClick={openAddSidebar} />
       </div>
 
       {/* Table */}
       <div style={{ flex: 1, padding: "2rem", background: "#232946" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #444" }}>
-              <th style={{ textAlign: "left", padding: "10px" }}> Option name</th>
-              <th style={{ textAlign: "left", padding: "10px" }}>Category</th>
-              <th style={{ textAlign: "center", padding: "10px" }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentChecklists.map((checklist) => (
-              <tr key={checklist.id} style={{ borderBottom: "1px solid #444" }}>
-                <td style={{ padding: "10px" }}>{checklist.name}</td>
-                <td style={{ padding: "10px" }}>{checklist.category}</td>
-                <td style={{ textAlign: "center", padding: "10px" }}>
-                  <Button icon="pi pi-pencil" className="p-button-rounded p-button-info p-button-sm" onClick={() => openEditSidebar(checklist)} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable value={currentChecklists} paginator rows={itemsPerPage} responsiveLayout="scroll">
+          <Column field="name" header="Option Name" sortable />
+          <Column field="category.name" header="Category" sortable />
+          <Column header="Action" body={actionBodyTemplate} />
+        </DataTable>
 
         {/* Pagination */}
         <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
@@ -99,8 +179,9 @@ export default function AdminChecklistsPage() {
       <Sidebar visible={sidebarVisible} onHide={() => setSidebarVisible(false)} position="right" style={{ width: "30rem" }}>
         <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }} onSubmit={handleSave}>
           <h2>{editChecklist?.id ? "Edit Checklist Option" : "Add New Checklist Option"}</h2>
+
           <label>
-            option Name:
+            Option Name:
             <input
               type="text"
               value={editChecklist?.name || ""}
@@ -109,30 +190,25 @@ export default function AdminChecklistsPage() {
               style={{ width: "100%", padding: "8px", borderRadius: 4, border: "1px solid #ccc", marginTop: 4 }}
             />
           </label>
-        <label>
-  Category:
-  <select
-    value={editChecklist?.category || ""}
-    onChange={(e) => setEditChecklist({ ...editChecklist, category: e.target.value })}
-    required
-    style={{
-      width: "100%",
-      padding: "8px",
-      borderRadius: 4,
-      border: "1px solid #ccc",
-      marginTop: 4,
-    }}
-  >
-    <option value="" disabled>Select Category</option>
-    <option value="Interior">Interior</option>
-    <option value="Exterior">Exterior</option>
-    <option value="Engine">Engine</option>
-  </select>
-</label>
+
+          <label>
+            Category:
+            <select
+              value={editChecklist?.categoryId || ""}
+              onChange={(e) => setEditChecklist({ ...editChecklist, categoryId: e.target.value })}
+              required
+              style={{ width: "100%", padding: "8px", borderRadius: 4, border: "1px solid #ccc", marginTop: 4 }}
+            >
+              <option value="" disabled>Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </label>
 
           <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />
           {editChecklist?.id && (
-            <Button type="button" label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={handleDelete} />
+            <Button type="button" label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={() => handleDelete(editChecklist.id)} />
           )}
         </form>
       </Sidebar>

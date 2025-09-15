@@ -1,32 +1,64 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card } from "primereact/card";
 import { Button } from "primereact/button";
 import { useRouter } from "next/navigation";
-import {brands } from "../brands/data";
-import { users } from "../users/data";
 
 export default function AdminDashboard() {
   const router = useRouter();
+
+  const [stats, setStats] = useState({
+    users: 0,
+    brands: 0,
+    bookings: 0,
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [usersRes, brandsRes, bookingsRes] = await Promise.all([
+          fetch("/api/v1/users"),
+          fetch("/api/v1/brands"),
+          fetch("/api/v1/bookings"),
+        ]);
+
+        const [users, brands, bookings] = await Promise.all([
+          usersRes.json(),
+          brandsRes.json(),
+          bookingsRes.json(),
+        ]);
+
+        setStats({
+          users: users.length,
+          brands: brands.length,
+          bookings: bookings.length,
+        });
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    }
+
+    fetchStats();
+  }, []);
 
   const cards = [
     {
       title: "Users",
       icon: "pi pi-users",
-      total: users.length,  // Count from users file
+      total: stats.users,
       url: "/admin/users",
     },
-   {
-  title: "Brands",
-  icon: "pi pi-car",
-  total: brands.length, // ✅ use brands
-  url: "/admin/brands",
-},
-
+    {
+      title: "Brands",
+      icon: "pi pi-car",
+      total: stats.brands,
+      url: "/admin/brands",
+    },
     {
       title: "Bookings",
       icon: "pi pi-calendar",
-      total: 0, // You can create `bookings/data.js` later
+      total: stats.bookings,
       url: "/admin/bookings",
     },
     {

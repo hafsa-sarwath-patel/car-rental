@@ -1,80 +1,123 @@
+// -----------------
+// Prisma Generator
+// -----------------
 generator client {
   provider = "prisma-client-js"
-//output   ="../src/lib/prisma"
+  // output = "../src/lib/prisma"  // optional custom output path
 }
+
+// -----------------
+// Database Source
+// -----------------
 datasource db {
   provider = "mongodb"
   url      = env("DB_URL")
 }
+
+// -----------------
+// Enums
+// -----------------
 enum Role {
   ADMIN
-    USER
-    DRIVER
-    MEHCHANIC
-    PROVIDER
-    CUSTOMER
+  USER
+  DRIVER
+  MECHANIC
+  PROVIDER
+  CUSTOMER
 }
+
+// -----------------
+// Core Models
+// -----------------
 model users {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  username      String @unique
-  password       String
-  role_id   Role
+  name        String
+  username    String   @unique
+  email       String?
+  password    String
+  role        Role
   isAvailable Boolean  @default(true)
-
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @updatedAt
 }
+
+// Brand → Model → Variant hierarchy
 model Brand {
-  id     String   @id @default(auto()) @map("_id") @db.ObjectId
-  name   String   @unique
-  image  String?
-  models Model[]
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  image     String?
+  isActive  Boolean  @default(true)
+  models    Model[]
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model Model {
-  id       String   @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
-  brandId  String   @db.ObjectId
-  brand    Brand    @relation(fields: [brandId], references: [id])
-  variants Variant[]
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  brandId   String   @db.ObjectId
+  brand     Brand  @relation(fields: [brandId], references: [id])
+  variants  Variant[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model Variant {
-  id      String   @id @default(auto()) @map("_id") @db.ObjectId
-  name    String
-  modelId String   @db.ObjectId
-  model   Model    @relation(fields: [modelId], references: [id])
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  modelId   String   @db.ObjectId
+  model     Model    @relation(fields: [modelId], references: [id])
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
+// State → City hierarchy
 model State {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  name   String  @unique
-  cities City[]
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  cities    City[]
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model City {
-  id      String  @id @default(auto()) @map("_id") @db.ObjectId
-  name    String
-  stateId String  @db.ObjectId
-  state   State   @relation(fields: [stateId], references: [id])
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  stateId   String   @db.ObjectId
+  state     State    @relation(fields: [stateId], references: [id])
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
+// Checklist hierarchy
 model ChecklistCategory {
-  id       String             @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
-  options  ChecklistOption[]
+  id          String             @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?            // <- add this line
+  options     ChecklistOption[]
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @updatedAt
 }
 
 model ChecklistOption {
-  id         String            @id @default(auto()) @map("_id") @db.ObjectId
-  name       String
-  categoryId String            @db.ObjectId
-  category   ChecklistCategory @relation(fields: [categoryId], references: [id])
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?           // optional description
+  isActive    Boolean @default(true)  // active flag
+  categoryId  String            @db.ObjectId
+  category    ChecklistCategory @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime? @default(now())
+  updatedAt   DateTime? @updatedAt
 }
 
+
+// Application settings
 model Setting {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
-  value    String
-  dataType String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  value     String
+  dataType  String
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }
-
