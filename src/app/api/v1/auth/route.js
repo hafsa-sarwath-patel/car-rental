@@ -1,8 +1,3 @@
-import { NextResponse } from "next/server";
-import { generateToken } from "@/util/jwt-access";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-
 export async function POST(req) {
   try {
     const { username, password } = await req.json();
@@ -16,6 +11,14 @@ export async function POST(req) {
       return NextResponse.json(
         { message: "Invalid username", data: null, statusCode: 401 },
         { status: 401 }
+      );
+    }
+
+    // ✅ New check: make sure user has a valid role
+    if (!user.role) {
+      return NextResponse.json(
+        { message: "User role missing", data: null, statusCode: 500 },
+        { status: 500 }
       );
     }
 
@@ -34,16 +37,16 @@ export async function POST(req) {
     // 4️⃣ Send response + set cookie
     const res = NextResponse.json({
       message: "Login Successful",
-      data: token, // optional, cookie is enough
+      data: token,
       statusCode: 200,
     });
 
     res.cookies.set("jwt", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
-      sameSite: "lax", // works for cross-origin in deployment
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 day
+      maxAge: 60 * 60 * 24,
     });
 
     return res;
