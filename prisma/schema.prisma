@@ -27,16 +27,22 @@ enum Role {
 // -----------------
 // Core Models
 // -----------------
-model users {
+
+
+model User {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  username    String   @unique
-  email       String?
+  username    String   
+  email       String?      // ✅ Add this
   password    String
   role        Role
   isAvailable Boolean  @default(true)
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+
+@@unique([username, email])
+
 }
 
 // Brand → Model → Variant hierarchy
@@ -70,23 +76,29 @@ model Variant {
   updatedAt DateTime? @updatedAt
 }
 
-// State → City hierarchy
 model State {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String   @unique
-  cities    City[]
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  code      String
+  status    String  // or use enum Status { Active Inactive }
+  cities    City[]  // <-- inverse relation
+  providers   Provider[]  // <-- inverse relation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model City {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  stateId   String   @db.ObjectId
-  state     State    @relation(fields: [stateId], references: [id])
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  stateId   String  @db.ObjectId
+  status    String  // "Active" or "Inactive"
+  state     State   @relation(fields: [stateId], references: [id])
+  providers   Provider[]  // <-- inverse relation
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
+
+
 
 // Checklist hierarchy
 model ChecklistCategory {
@@ -119,3 +131,31 @@ model Setting {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 }
+
+enum RegistrationStatus {
+  PENDING
+  PENDING_VERIFICATION
+  APPROVED
+  REJECTED
+}
+
+model Provider {
+  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
+  registration_status RegistrationStatus @default(PENDING)
+  name                String
+  email               String             @unique
+  mobile              String             @unique
+  alternate_mobile    String?
+  address             String
+  cityId              String?            @db.ObjectId
+  city                City?              @relation(fields: [cityId], references: [id])
+  stateId             String?             @db.ObjectId
+  state               State?              @relation(fields: [stateId], references: [id])
+  zipcode             String
+  mobileOTP           String?
+  emailOTP            String?
+  is_active           Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+

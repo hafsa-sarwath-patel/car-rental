@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -141,26 +142,7 @@ export default function LoginPage() {
           >
             Login
           </button>
-          <div style={{ marginTop: 24, textAlign: "center" }}>
-            <span style={{ color: "#1e3c72" }}>If new user, </span>
-            <button
-              type="button"
-              onClick={() => router.push("/admin/signup")}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#2a5298",
-                textDecoration: "underline",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: 16,
-                padding: 0,
-                marginLeft: 4,
-              }}
-            >
-              Signup
-            </button>
-          </div>
+         
         </form>
       </div>
     </div>

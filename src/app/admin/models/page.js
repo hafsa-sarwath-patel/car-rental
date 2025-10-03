@@ -4,37 +4,48 @@ import { useState, useRef, useEffect } from "react";
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { InputText } from "primereact/inputtext";
+import { Dropdown } from "primereact/dropdown";
+import { FloatLabel } from "primereact/floatlabel";
+//import { InputText } from "primereact/inputtext";
+import { Card } from "primereact/card";
+import { ProgressSpinner } from "primereact/progressspinner";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import "primeflex/primeflex.css";
 
 export default function AdminModelsPage() {
   const [models, setModels] = useState([]);
   const [brands, setBrands] = useState([]);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [editModel, setEditModel] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [loading, setLoading] = useState(false);
   const toast = useRef(null);
 
   // Fetch models
   const loadModels = async () => {
+    setLoading(true);
     try {
       const res = await fetch("/api/v1/models");
       if (!res.ok) throw new Error("Failed to fetch models");
       const data = await res.json();
       setModels(data);
-    } catch (err) {
+    } catch {
       toast.current?.show({
         severity: "error",
         summary: "Error",
         detail: "Failed to load models",
         life: 3000,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Fetch brands for dropdown
+  // Fetch brands
   const loadBrands = async () => {
     try {
       const res = await fetch("/api/v1/brands");
@@ -56,12 +67,6 @@ export default function AdminModelsPage() {
     loadBrands();
   }, []);
 
-  const totalPages = Math.ceil(models.length / itemsPerPage);
-  const currentModels = models.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
   const openAddSidebar = () => {
     setEditModel({ id: null, name: "", brandId: brands[0]?.id || "" });
     setSidebarVisible(true);
@@ -72,7 +77,6 @@ export default function AdminModelsPage() {
     setSidebarVisible(true);
   };
 
-  // Save/Add Model via API
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -133,127 +137,93 @@ export default function AdminModelsPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#a4aeedff", color: "#fff" }}>
+    <div className="p-4" style={{ minHeight: "100vh", background: "#a4aeedff", color: "#fff" }}>
       <Toast ref={toast} />
 
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "1rem 2rem",
-          background: "#232946",
-        }}
-      >
+      <div className="p-d-flex p-jc-between p-ai-center p-mb-3" style={{ background: "#232946", padding: "1rem 2rem" }}>
         <h1 style={{ fontWeight: 700, fontSize: 28 }}>Models</h1>
-        <Button
-          label="Add New Model"
-          icon="pi pi-plus"
-          className="p-button-success"
-          onClick={openAddSidebar}
-        />
+        <Button label="Add New Model" icon="pi pi-plus" className="p-button-success" onClick={openAddSidebar} />
       </div>
 
-      {/* Table */}
-      <div style={{ flex: 1, padding: "2rem", background: "#232946" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", color: "#fff" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #444" }}>
-              <th style={{ padding: 10 }}>Model Name</th>
-              <th style={{ padding: 10 }}>Brand</th>
-              <th style={{ padding: 10, textAlign: "center" }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentModels.map((model) => (
-              <tr key={model.id} style={{ borderBottom: "1px solid #444" }}>
-                <td style={{ padding: 10 }}>{model.name}</td>
-                <td style={{ padding: 10 }}>{model.brandName}</td>
-                <td style={{ padding: 10, textAlign: "center" }}>
-                  <Button
-                    icon="pi pi-pencil"
-                    className="p-button-rounded p-button-info p-button-sm"
-                    onClick={() => openEditSidebar(model)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Pagination */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
-          <Button
-            label="Prev"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-            className="p-button-text"
-          />
-          <span style={{ margin: "0 10px", alignSelf: "center" }}>
-            Page {currentPage} of {totalPages || 1}
-          </span>
-          <Button
-            label="Next"
-            disabled={currentPage === totalPages || totalPages === 0}
-            onClick={() => setCurrentPage((p) => p + 1)}
-            className="p-button-text"
-          />
-        </div>
-      </div>
+      {/* DataTable */}
+      <Card>
+        {loading ? (
+          <div className="p-d-flex p-jc-center p-ai-center" style={{ height: 200 }}>
+            <ProgressSpinner />
+          </div>
+        ) : (
+          <DataTable
+            value={models}
+            paginator
+            rows={5}
+            responsiveLayout="scroll"
+            emptyMessage="No models found"
+          >
+            <Column field="name" header="Model Name" />
+            <Column field="brandName" header="Brand" />
+            <Column
+              header="Actions"
+              body={(rowData) => (
+                <Button icon="pi pi-pencil" className="p-button-rounded p-button-info p-button-sm" onClick={() => openEditSidebar(rowData)} />
+              )}
+            />
+          </DataTable>
+        )}
+      </Card>
 
       {/* Sidebar */}
-      <Sidebar
-        visible={sidebarVisible}
-        onHide={() => setSidebarVisible(false)}
-        position="right"
-        style={{ width: "30rem" }}
-      >
-        <form
-          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
-          onSubmit={handleSave}
-        >
-          <h2>{editModel?.id ? "Edit Model" : "Add New Model"}</h2>
+     <Sidebar
+  visible={sidebarVisible}
+  onHide={() => setSidebarVisible(false)}
+  position="right"
+  style={{ width: "40rem", maxWidth: "95vw", height: "100%", overflowY: "auto" }}
+>
+  <Card>
+    <form className="p-fluid" onSubmit={handleSave}>
+      <h2>{editModel?.id ? "Edit Model" : "Add New Model"}</h2>
 
-          <label>
-            Model Name:
-            <input
-              type="text"
-              value={editModel?.name || ""}
-              onChange={(e) => setEditModel({ ...editModel, name: e.target.value })}
-              required
-              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
-            />
-          </label>
+      {/* Field 1 */}
+      <FloatLabel className="p-my-3 mt-5">
+        <InputText
+          id="modelName"
+          value={editModel?.name || ""}
+          onChange={(e) => setEditModel({ ...editModel, name: e.target.value })}
+          required
+        />
+        <label htmlFor="modelName">Model Name</label>
+      </FloatLabel>
 
-          <label>
-            Brand:
-            <select
-              value={editModel?.brandId || ""}
-              onChange={(e) => setEditModel({ ...editModel, brandId: e.target.value })}
-              required
-              style={{ width: "100%", padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
-            >
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </label>
+      {/* Field 2 */}
+      <FloatLabel className="p-my-3 mt-5">
+        <InputText
+          id="modelCode"
+          value={editModel?.code || ""}
+          onChange={(e) => setEditModel({ ...editModel, code: e.target.value })}
+          required
+        />
+        <label htmlFor="modelCode">Model Code</label>
+      </FloatLabel>
 
-          <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />
-          {editModel?.id && (
-            <Button
-              type="button"
-              label="Delete"
-              icon="pi pi-trash"
-              className="p-button-danger"
-              onClick={handleDelete}
-            />
-          )}
-        </form>
-      </Sidebar>
+      {/* Field 3 */}
+      <FloatLabel className="p-my-3 mt-5">
+        <InputText
+          id="modelDescription"
+          value={editModel?.description || ""}
+          onChange={(e) => setEditModel({ ...editModel, description: e.target.value })}
+        />
+        <label htmlFor="modelDescription">Description</label>
+      </FloatLabel>
+
+      <div className="p-d-flex p-jc-between p-mt-5">
+        <Button type="submit" label="Save" icon="pi pi-check" className="p-button-success" />
+        {editModel?.id && (
+          <Button type="button" label="Delete" icon="pi pi-trash" className="p-button-danger" onClick={handleDelete} />
+        )}
+      </div>
+    </form>
+  </Card>
+</Sidebar>
     </div>
   );
 }

@@ -1,54 +1,49 @@
+// src/app/api/v1/users/[id]/route.js
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma"; // or your prisma client path
+import bcrypt from "bcryptjs";
 
-// ✅ Update User
-export async function PUT(request, { params }) {
+export async function PUT(req, { params }) {
   try {
-    const { id } = params; // dynamic route param
-    const data = await request.json();
-
-   const updatedUser = await prisma.users.update({
-  where: { id: id },
-  data: {
-    name: data.name,
-    role: data.role,
-  },
-  select: {
-    id: true,
-    name: true,
-    username: true,
-    role: true,
-    isAvailable: true,
-  },
-});
+   
+    const id = await params;
 
 
-    return NextResponse.json(updatedUser, { status: 200 });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err.message, statusCode: 400 },
-      { status: 400 }
-    );
-  }
-}
+    const data = await req.json();
 
-// ✅ Delete User
-export async function DELETE(request, { params }) {
-  try {
-    const { id } = params;
+    // Handle optional password
+    const updateData = { ...data };
+    if (!updateData.password) delete updateData.password;
+    else updateData.password = await bcrypt.hash(updateData.password, 10);
 
-    await prisma.users.delete({
-      where: { id: id },
+    // Optional: make email truly optional
+    if (updateData.email === "") delete updateData.email;
+
+    // Prevent duplicate username/email
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: updateData.username },
+          ...(updateData.email ? [{ email: updateData.email }] : []),
+        ],
+        NOT: { id },
+      },
+    });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "Username or Email already exists for another user" },
+        { status: 400 }
+      );
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData,
     });
 
-    return NextResponse.json(
-      { message: "User deleted successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json(updatedUser);
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message, statusCode: 400 },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
 }

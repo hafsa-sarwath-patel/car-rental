@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "primereact/card";
 import { Button } from "primereact/button";
+import { ProgressSpinner } from "primereact/progressspinner";
 import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
@@ -13,7 +14,6 @@ export default function AdminDashboard() {
     brands: 0,
     bookings: 0,
   });
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,21 +25,9 @@ export default function AdminDashboard() {
           endpoints.map(async (url) => {
             try {
               const res = await fetch(url);
-
-              if (!res.ok) {
-                console.error(`Fetch failed for ${url}: status ${res.status}`);
-                return [];
-              }
-
-              try {
-                return await res.json();
-              } catch {
-                const text = await res.text();
-                console.error(`Non-JSON response from ${url}:`, text);
-                return [];
-              }
-            } catch (err) {
-              console.error(`Network error for ${url}:`, err);
+              if (!res.ok) return [];
+              return await res.json().catch(() => []);
+            } catch {
               return [];
             }
           })
@@ -52,9 +40,6 @@ export default function AdminDashboard() {
           brands: Array.isArray(brands) ? brands.length : 0,
           bookings: Array.isArray(bookings) ? bookings.length : 0,
         });
-
-      } catch (err) {
-        console.error("Error fetching stats:", err);
       } finally {
         setLoading(false);
       }
@@ -64,30 +49,10 @@ export default function AdminDashboard() {
   }, []);
 
   const cards = [
-    {
-      title: "Users",
-      icon: "pi pi-users",
-      total: stats.users,
-      url: "/admin/users",
-    },
-    {
-      title: "Brands",
-      icon: "pi pi-car",
-      total: stats.brands,
-      url: "/admin/brands",
-    },
-    {
-      title: "Bookings",
-      icon: "pi pi-calendar",
-      total: stats.bookings,
-      url: "/admin/bookings",
-    },
-    {
-      title: "Settings",
-      icon: "pi pi-cog",
-      total: null,
-      url: "/admin/settings",
-    },
+    { title: "Users", icon: "pi pi-users", total: stats.users, url: "/admin/users" },
+    { title: "Brands", icon: "pi pi-car", total: stats.brands, url: "/admin/brands" },
+    { title: "Bookings", icon: "pi pi-calendar", total: stats.bookings, url: "/admin/bookings" },
+    { title: "Settings", icon: "pi pi-cog", total: null, url: "/admin/settings" },
   ];
 
   return (
@@ -106,7 +71,14 @@ export default function AdminDashboard() {
       </h1>
 
       {loading ? (
-        <p style={{ color: "#fff", fontSize: 18 }}>Loading stats...</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <ProgressSpinner
+            style={{ width: "50px", height: "50px" }}
+            strokeWidth="6"
+            animationDuration=".5s"
+          />
+          <p style={{ color: "#fff", fontSize: 18, marginTop: 16 }}>Loading stats...</p>
+        </div>
       ) : (
         <div
           style={{

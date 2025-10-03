@@ -6,6 +6,13 @@ import { Column } from "primereact/column";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
 import { Toast } from "primereact/toast";
+import { InputText } from "primereact/inputtext";
+import { Dropdown } from "primereact/dropdown";
+import { Card } from "primereact/card";
+
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 
 export default function AdminStatesPage() {
   const [states, setStates] = useState([]);
@@ -13,13 +20,27 @@ export default function AdminStatesPage() {
   const [editState, setEditState] = useState(null);
   const toast = useRef(null);
 
-  // Load states from API
+  const [summary, setSummary] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+  });
+
   const loadStates = async () => {
     try {
       const res = await fetch("/api/v1/states");
       if (!res.ok) throw new Error("Failed to fetch states");
       const data = await res.json();
       setStates(data);
+
+      // compute summary counts
+      const activeCount = data.filter((s) => s.status === "Active").length;
+      const inactiveCount = data.filter((s) => s.status === "Inactive").length;
+      setSummary({
+        total: data.length,
+        active: activeCount,
+        inactive: inactiveCount,
+      });
     } catch {
       toast.current.show({
         severity: "error",
@@ -35,7 +56,11 @@ export default function AdminStatesPage() {
   }, []);
 
   const openSidebar = (state = null) => {
-    setEditState(state ? { ...state } : { id: null, name: "" });
+    setEditState(
+      state
+        ? { ...state }
+        : { id: null, name: "", code: "", status: "Active" }
+    );
     setSidebarVisible(true);
   };
 
@@ -47,10 +72,16 @@ export default function AdminStatesPage() {
         ? `/api/v1/states/${editState.id}`
         : "/api/v1/states";
 
+      const body = {
+        name: editState.name,
+        code: editState.code,
+        status: editState.status,
+      };
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editState.name }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) throw new Error("Failed to save state");
@@ -97,7 +128,7 @@ export default function AdminStatesPage() {
   };
 
   const actionBodyTemplate = (rowData) => (
-    <div style={{ display: "flex", gap: "0.5rem" }}>
+    <div className="flex gap-2 justify-center">
       <Button
         icon="pi pi-pencil"
         className="p-button-sm p-button-info"
@@ -112,34 +143,121 @@ export default function AdminStatesPage() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", padding: "2rem", background: "#353573ff" }}>
+    <div className="min-h-screen bg-surface-100 p-6">
       <Toast ref={toast} />
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+      {/* Summary Card */}
+     
+
+      <Card className="mb-6 rounded-2xl shadow-md">
+ {/* Header & Add Button */}
+     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
         <h1>States</h1>
-        <Button label="Add New State" icon="pi pi-plus" className="p-button-success" onClick={() => openSidebar()} />
+        <Button label="Add New states" icon="pi pi-plus" className="p-button-success" onClick={() => openSidebar()} />
       </div>
 
-      <DataTable value={states} paginator rows={5} responsiveLayout="scroll">
-        <Column field="id" header="ID" sortable />
+        <div className="grid grid-cols-3 gap-6 text-center">
+          <div>
+            <h3 className="text-lg font-semibold">Total States</h3>
+            <p className="text-2xl">{summary.total}</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Active</h3>
+            <p className="text-2xl text-green-600">{summary.active}</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">Inactive</h3>
+            <p className="text-2xl text-red-600">{summary.inactive}</p>
+          </div>
+        </div>
+      </Card>
+
+
+      {/* Data Table */}
+      <DataTable
+        value={states}
+        paginator
+        rows={5}
+        rowsPerPageOptions={[5, 10, 20]}
+        responsiveLayout="scroll"
+        className="p-datatable-striped p-datatable-gridlines rounded-xl shadow"
+      >
         <Column field="name" header="State Name" sortable />
+        <Column field="code" header="Code" sortable />
+        <Column field="status" header="Status" sortable />
         <Column header="Action" body={actionBodyTemplate} />
       </DataTable>
 
-      <Sidebar visible={sidebarVisible} onHide={() => setSidebarVisible(false)} position="right" style={{ width: "30rem" }}>
-        <h2>{editState?.id ? "Edit State" : "Add New State"}</h2>
-        <form style={{ display: "flex", flexDirection: "column", gap: "1rem" }} onSubmit={handleSave}>
-          <label>
-            State Name:
-            <input
-              type="text"
+      {/* Sidebar Form */}
+      <Sidebar
+        visible={sidebarVisible}
+        onHide={() => setSidebarVisible(false)}
+        position="right"
+        style={{ width: "30rem" }}
+        className="bg-surface-0"
+      >
+        <form
+          onSubmit={handleSave}
+          className="flex flex-col gap-4 p-4"
+        >
+          <h2 className="text-xl font-semibold">
+            {editState?.id ? "Edit State" : "Add New State"}
+          </h2>
+
+          <span className="p-float-label">
+            <InputText
+              id="stateName"
               value={editState?.name || ""}
-              onChange={(e) => setEditState({ ...editState, name: e.target.value })}
+              onChange={(e) =>
+                setEditState({ ...editState, name: e.target.value })
+              }
               required
-              style={{ width: "100%", padding: "8px" }}
+              className="w-full"
             />
-          </label>
-          <Button type="submit" label="Save" className="p-button-success" />
+            <label htmlFor="stateName">State Name</label>
+          </span>
+
+          <span className="p-float-label">
+            <InputText
+              id="stateCode"
+              value={editState?.code || ""}
+              onChange={(e) =>
+                setEditState({ ...editState, code: e.target.value })
+              }
+              required
+              className="w-full"
+            />
+            <label htmlFor="stateCode">State Code</label>
+          </span>
+
+          <Dropdown
+            value={editState?.status || "Active"}
+            options={[
+              { label: "Active", value: "Active" },
+              { label: "Inactive", value: "Inactive" },
+            ]}
+            onChange={(e) =>
+              setEditState({ ...editState, status: e.value })
+            }
+            placeholder="Select Status"
+            className="w-full"
+          />
+
+          <Button
+            type="submit"
+            label="Save"
+            icon="pi pi-check"
+            className="p-button-success"
+          />
+          {editState?.id && (
+            <Button
+              type="button"
+              label="Delete"
+              icon="pi pi-trash"
+              className="p-button-danger"
+              onClick={() => handleDelete(editState.id)}
+            />
+          )}
         </form>
       </Sidebar>
     </div>

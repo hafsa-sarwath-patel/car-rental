@@ -7,6 +7,11 @@ import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
 import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import { MultiSelect } from "primereact/multiselect";
+import { ProgressBar } from "primereact/progressbar";
+import { FloatLabel } from "primereact/floatlabel";
+import { Card } from "primereact/card";
 
 import "primereact/resources/themes/lara-light-blue/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -16,45 +21,64 @@ export default function AdminUsersPage() {
   const toast = useRef(null);
 
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
+  const [formUser, setFormUser] = useState(null);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+
   const [lazyParams, setLazyParams] = useState({
     first: 0,
-    rows: 5,
+    rows: 10,
     page: 1,
-    filters: {},
+    sortField: null,
+    sortOrder: null,
+    filters: {
+      global: { value: null, matchMode: "contains" },
+      name: { value: null, matchMode: "contains" },
+      username: { value: null, matchMode: "contains" },
+      email: { value: null, matchMode: "contains" },
+      role: { value: null, matchMode: "in" },
+      isAvailable: { value: null, matchMode: "equals" },
+    },
   });
-  const [editVisible, setEditVisible] = useState(false);
-  const [editUser, setEditUser] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  // Logged-in user role
   const currentUserRole = "ADMIN";
 
-  const roleOptions = [
-    { label: "ADMIN", value: "ADMIN" },
-    { label: "USER", value: "USER" },
-    { label: "DRIVER", value: "DRIVER" },
-    { label: "MECHANIC", value: "MECHANIC" },
-    { label: "PROVIDER", value: "PROVIDER" },
-    { label: "CUSTOMER", value: "CUSTOMER" },
+  const roleOptions = ["ADMIN", "USER", "DRIVER", "MECHANIC", "PROVIDER", "CUSTOMER"].map(
+    (r) => ({ label: r, value: r })
+  );
+
+  const statusOptions = [
+    { label: "Active", value: true },
+    { label: "Inactive", value: false },
   ];
 
-  const showToast = (severity, summary, detail) =>
+  const showToast = (severity, summary, detail) => {
     toast.current.show({ severity, summary, detail, life: 3000 });
+  };
 
+  /** Load users from API */
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/v1/users?page=${lazyParams.page}&limit=${lazyParams.rows}`,
-        { cache: "no-store" }
-      );
+      const query = new URLSearchParams({
+        page: lazyParams.page,
+        limit: lazyParams.rows,
+        sortField: lazyParams.sortField || "",
+        sortOrder: lazyParams.sortOrder || "",
+        filters: JSON.stringify(lazyParams.filters),
+      }).toString();
+
+      const res = await fetch(`/api/v1/users?${query}`, { cache: "no-store" });
       const json = await res.json();
+
       if (!res.ok) throw new Error(json.error || "Load failed");
+
       setUsers(json.data);
       setTotalRecords(json.meta.total);
     } catch (err) {
-      console.error(err);
       showToast("error", "Fetch Error", err.message);
     } finally {
       setLoading(false);
@@ -63,210 +87,263 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lazyParams]);
 
+  /** Save or update user */
   const handleSave = async (e) => {
     e.preventDefault();
-    const method = editUser?.id ? "PUT" : "POST";
-    const url = editUser?.id
-      ? `/api/v1/users/${editUser.id}`
-      : `/api/v1/users`;
+    setSaving(true);
+
+    const method = formUser?.id ? "PUT" : "POST";
+    const url = formUser?.id ? `/api/v1/users/${formUser.id}` : `/api/v1/users`;
 
     try {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editUser),
+        body: JSON.stringify(formUser),
       });
       if (!res.ok) throw new Error(`${method} failed`);
 
       showToast(
         "success",
         "Success",
-        editUser?.id ? "User updated" : "User added"
+        formUser?.id ? "User updated successfully" : "User added successfully"
       );
-      setEditVisible(false);
+
+      setFormVisible(false);
+      setFormUser(null);
       loadUsers();
     } catch (err) {
-      console.error(err);
       showToast("error", "Save Failed", err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this user?")) return;
-    try {
-      const res = await fetch(`/api/v1/users/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
-      showToast("success", "User Deleted", `User ${id} removed`);
-      loadUsers();
-    } catch (err) {
-      console.error(err);
-      showToast("error", "Delete Failed", err.message);
-    }
-  };
-
-  // Show Edit/Delete only for rows with role === ADMIN
+  /** Actions column */
   const actionTemplate = (row) => {
-    if (row.role !== "ADMIN") return null;
-
     return (
-      <div style={{ display: "flex", gap: "0.5rem" }}>
+      <div className="flex gap-2 justify-center">
         <Button
           icon="pi pi-pencil"
           className="p-button-rounded p-button-info p-button-sm"
           onClick={() => {
-            setEditUser(row);
-            setEditVisible(true);
+            setFormUser({ ...row, password: "" });
+            setFormVisible(true);
           }}
-        />
-        <Button
-          icon="pi pi-trash"
-          className="p-button-rounded p-button-danger p-button-sm"
-          onClick={() => handleDelete(row.id)}
         />
       </div>
     );
   };
 
-  return (
-    <div style={{ padding: "1rem" }}>
-      <Toast ref={toast} />
+  /** Sidebar Form */
+  const SidebarForm = (
+    <Sidebar
+      visible={formVisible}
+      onHide={() => setFormVisible(false)}
+      position="right"
+      style={{ width: "28rem" }}
+      header={formUser?.id ? "Edit User" : "Add User"}
+    >
+      <form className="flex flex-col gap-4" onSubmit={handleSave}>
+        <FloatLabel>
+          <InputText
+            value={formUser?.name ?? ""}
+            onChange={(e) => setFormUser({ ...formUser, name: e.target.value })}
+            required
+            className="w-full"
+          />
+          <label>Name</label>
+        </FloatLabel>
 
-      <div
-        style={{
-          marginBottom: "1rem",
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <h2>Manage Users</h2>
-        {currentUserRole === "ADMIN" && (
+        <FloatLabel>
+          <InputText
+            value={formUser?.username ?? ""}
+            onChange={(e) => setFormUser({ ...formUser, username: e.target.value })}
+            required
+            className="w-full"
+          />
+          <label>Username</label>
+        </FloatLabel>
+
+        <FloatLabel>
+          <InputText
+            type="email"
+            value={formUser?.email ?? ""}
+            onChange={(e) => setFormUser({ ...formUser, email: e.target.value })}
+            className="w-full"
+          />
+          <label>Email (optional)</label>
+        </FloatLabel>
+
+        <FloatLabel>
+          <InputText
+            type="password"
+            value={formUser?.password ?? ""}
+            onChange={(e) => setFormUser({ ...formUser, password: e.target.value })}
+            required={!formUser?.id}
+            className="w-full"
+          />
+          <label>Password {formUser?.id ? "(leave blank to keep)" : ""}</label>
+        </FloatLabel>
+
+        <FloatLabel>
+          <Dropdown
+            value={formUser?.role ?? ""}
+            options={roleOptions}
+            onChange={(e) => setFormUser({ ...formUser, role: e.value })}
+            required
+            className="w-full"
+          />
+          <label>Role</label>
+        </FloatLabel>
+
+        <FloatLabel>
+          <Dropdown
+            value={formUser?.isAvailable}
+            options={statusOptions}
+            onChange={(e) => setFormUser({ ...formUser, isAvailable: e.value })}
+            optionLabel="label"
+            optionValue="value"
+            className="w-full"
+          />
+          <label>Status</label>
+        </FloatLabel>
+
+        <Button
+          type="submit"
+          label={saving ? "Saving..." : "Save"}
+          icon="pi pi-check"
+          className="p-button-success"
+          disabled={saving}
+        />
+      </form>
+    </Sidebar>
+  );
+
+  // Derived counts from current page
+  const totalUsers = users.length;
+  const activeUsers = users.filter((u) => u.isAvailable).length;
+  const inactiveUsers = totalUsers - activeUsers;
+
+  return (
+    <div className="p-6">
+      <Toast ref={toast} />
+      {loading && <ProgressBar mode="indeterminate" style={{ height: "4px" }} className="mb-3" />}
+
+      {/* Manage Users + Summary Card */}
+      <Card className="shadow-2 mb-6">
+        <div className="flex flex-wrap justify-between items-center gap-6">
+          <h2 className="text-xl font-semibold">Manage Users</h2>
+
           <Button
-            label="Add New User"
+            label="Add User"
             icon="pi pi-plus"
-            className="p-button-success"
+            className="p-button-success p-button-rounded"
             onClick={() => {
-              setEditUser({
-                name: "",
-                username: "",
-                email: "",
-                password: "",
-                role: "",
-              });
-              setEditVisible(true);
+              setFormUser({ name: "", username: "", email: "", password: "", role: "", isAvailable: true });
+              setFormVisible(true);
             }}
           />
-        )}
+
+          <div className="flex gap-8 text-center">
+            <div>
+              <h3 className="text-sm font-semibold">Total</h3>
+              <p className="text-lg">{totalRecords}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Active</h3>
+              <p className="text-lg text-green-600">{activeUsers}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Inactive</h3>
+              <p className="text-lg text-red-600">{inactiveUsers}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="p-input-icon-left">
+              <i className="pi pi-search" />
+              <InputText
+                value={globalFilterValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const _filters = { ...lazyParams.filters, global: { ...lazyParams.filters.global, value } };
+                  setLazyParams({ ...lazyParams, filters: _filters, page: 1, first: 0 });
+                  setGlobalFilterValue(value);
+                }}
+                placeholder="Keyword Search"
+              />
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      <div className="p-card p-shadow-2">
+        <DataTable
+          value={users}
+          paginator
+          lazy
+          totalRecords={totalRecords}
+          loading={loading}
+          first={lazyParams.first}
+          rows={lazyParams.rows}
+          sortField={lazyParams.sortField}
+          sortOrder={lazyParams.sortOrder}
+          onPage={(e) => setLazyParams({ ...lazyParams, first: e.first, rows: e.rows, page: e.page + 1 })}
+          onSort={(e) => setLazyParams({ ...lazyParams, sortField: e.sortField, sortOrder: e.sortOrder })}
+          filters={lazyParams.filters}
+          onFilter={(e) => setLazyParams({ ...lazyParams, filters: e.filters, page: 1, first: 0 })}
+          globalFilterFields={["name", "username", "email", "role"]}
+          stripedRows
+          className="rounded-2xl"
+          emptyMessage="No users found."
+        >
+          <Column field="name" header="Name" sortable filter filterPlaceholder="Search name" />
+          <Column field="username" header="Username" sortable filter filterPlaceholder="Search username" />
+          <Column field="email" header="Email" sortable filter filterPlaceholder="Search email" />
+          <Column
+            field="role"
+            header="Role"
+            sortable
+            filter
+            showFilterMenu={false}
+            filterElement={(opts) => (
+              <MultiSelect
+                value={opts.value}
+                options={roleOptions}
+                onChange={(e) => opts.filterApplyCallback(e.value)}
+                placeholder="Select Roles"
+                showClear
+                className="w-full"
+              />
+            )}
+          />
+          <Column
+            field="isAvailable"
+            header="Status"
+            body={(row) => (row.isAvailable ? "Active" : "Inactive")}
+            sortable
+            filter
+            showFilterMenu={false}
+            filterElement={(opts) => (
+              <Dropdown
+                value={opts.value}
+                options={statusOptions}
+                onChange={(e) => opts.filterApplyCallback(e.value)}
+                placeholder="Select Status"
+                showClear
+                className="w-full"
+              />
+            )}
+          />
+          <Column body={actionTemplate} header="Actions" style={{ width: "8rem", textAlign: "center" }} />
+        </DataTable>
       </div>
 
-      <DataTable
-        value={users}
-        paginator
-        lazy
-        loading={loading}
-        first={lazyParams.first}
-        rows={lazyParams.rows}
-        totalRecords={totalRecords}
-        onPage={(e) =>
-          setLazyParams({
-            ...lazyParams,
-            first: e.first,
-            rows: e.rows,
-            page: e.page + 1,
-          })
-        }
-        responsiveLayout="scroll"
-        stripedRows
-      >
-        <Column field="name" header="Name" sortable />
-        <Column field="username" header="Username" sortable />
-        <Column field="email" header="Email" sortable />
-        <Column
-          field="role"
-          header="Role"
-          sortable
-          body={(row) => row.role || "N/A"}
-        />
-        <Column
-          field="isAvailable"
-          header="Available"
-          body={(r) => (r.isAvailable ? "Yes" : "No")}
-        />
-        <Column
-          body={actionTemplate}
-          header="Actions"
-          style={{ textAlign: "center", width: "8rem" }}
-        />
-      </DataTable>
-
-      <Sidebar
-        visible={editVisible}
-        onHide={() => setEditVisible(false)}
-        position="right"
-        style={{ width: "30rem" }}
-      >
-        <form
-          style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
-          onSubmit={handleSave}
-        >
-          <h3>{editUser?.id ? "Edit User" : "Add New User"}</h3>
-
-          <input
-            type="text"
-            placeholder="Name"
-            value={editUser?.name || ""}
-            onChange={(e) =>
-              setEditUser({ ...editUser, name: e.target.value })
-            }
-            required
-          />
-
-          <input
-            type="text"
-            placeholder="Username"
-            value={editUser?.username || ""}
-            onChange={(e) =>
-              setEditUser({ ...editUser, username: e.target.value })
-            }
-            required
-          />
-
-          <input
-            type="email"
-            placeholder="Email"
-            value={editUser?.email || ""}
-            onChange={(e) =>
-              setEditUser({ ...editUser, email: e.target.value })
-            }
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={editUser?.password || ""}
-            onChange={(e) =>
-              setEditUser({ ...editUser, password: e.target.value })
-            }
-            required={!editUser?.id}
-          />
-
-          <Dropdown
-            value={editUser?.role || ""}
-            options={roleOptions}
-            onChange={(e) => setEditUser({ ...editUser, role: e.value })}
-            placeholder="Select Role"
-            required
-          />
-
-          <Button
-            type="submit"
-            label="Save"
-            icon="pi pi-check"
-            className="p-button-success"
-          />
-        </form>
-      </Sidebar>
+      {SidebarForm}
     </div>
   );
 }

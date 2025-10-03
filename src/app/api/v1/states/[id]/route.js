@@ -1,33 +1,51 @@
 import prisma from "@/lib/prisma";
 
-export async function GET(req, { params }) {
-  try {
-    const state = await prisma.State.findUnique({ where: { id: params.id } });
-    if (!state) return new Response(JSON.stringify({ error: "State not found" }), { status: 404 });
-    return new Response(JSON.stringify(state), { status: 200 });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: "Failed to fetch state" }), { status: 500 });
-  }
-}
-
+// Update a state
 export async function PUT(req, { params }) {
+  const { id } = params;
   try {
-    const { name } = await req.json();
-    const state = await prisma.State.update({
-      where: { id: params.id },
-      data: { name },
+    const { name, code, status } = await req.json();
+
+    if (!name || !code) {
+      return new Response(
+        JSON.stringify({ error: "Name and code are required" }),
+        { status: 400 }
+      );
+    }
+
+    if (!["Active", "Inactive"].includes(status)) {
+      return new Response(
+        JSON.stringify({ error: "Status must be Active or Inactive" }),
+        { status: 400 }
+      );
+    }
+
+    const state = await prisma.state.update({
+      where: { id: Number(id) },
+      data: { name, code, status },
     });
+
     return new Response(JSON.stringify(state), { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message || "Failed to update state" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: error.message || "Failed to update state" }),
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req, { params }) {
+// Delete a state
+export async function DELETE(_, { params }) {
+  const { id } = params;
   try {
-    await prisma.State.delete({ where: { id: params.id } });
-    return new Response(JSON.stringify({ message: "State deleted" }), { status: 200 });
+    await prisma.state.delete({
+      where: { id: Number(id) },
+    });
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message || "Failed to delete state" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: error.message || "Failed to delete state" }),
+      { status: 500 }
+    );
   }
 }
