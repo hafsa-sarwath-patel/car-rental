@@ -47,4 +47,22 @@ export const providerDal = {
       select: { id: true },
     })
   },
+
+  async findByEmail(email) {
+    return prisma.provider.findUnique({
+      where: { email },
+    })
+  },
+
+  async findByMobile(mobile) {
+    return prisma.provider.findUnique({
+      where: { mobile },
+    })
+  },
+
+  async findByUsername(username) {
+    return prisma.provider.findUnique({
+      where: { username },
+    })
+  },
 }
