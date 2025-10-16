@@ -19,7 +19,7 @@ export const providerDal = {
       city: p.city || null,
       state: p.state || null,
     }));
-  },
+  }, 
 
   async findById(id) {
     return prisma.provider.findUnique({

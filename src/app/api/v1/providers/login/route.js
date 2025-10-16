@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
+import { generateToken } from "@/util/jwt-access";
 
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3001";
 
+// ✅ Handle preflight CORS
 export async function OPTIONS() {
   return NextResponse.json(
     {},
@@ -26,38 +28,42 @@ export async function POST(req) {
       return NextResponse.json({ message: "CORS blocked" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { name, username, email, mobile, password } = body;
-
-    if (!name || !username || !email || !mobile || !password) {
-      return NextResponse.json({ message: "All fields are required" }, { status: 400 });
+    const { username, password } = await req.json();
+    if (!username || !password) {
+      return NextResponse.json({ message: "Username and password required" }, { status: 400 });
     }
 
-    const existing = await prisma.provider.findFirst({
-      where: { OR: [{ username }, { email }, { mobile }] },
-    });
-    if (existing) {
-      return NextResponse.json({ message: "Username, email, or mobile already exists" }, { status: 409 });
+    // ✅ Find provider by username
+    const provider = await prisma.provider.findUnique({ where: { username } });
+    if (!provider) {
+      return NextResponse.json({ message: "Provider not found" }, { status: 404 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // ✅ Compare password
+    const isMatch = await bcrypt.compare(password, provider.password);
+    if (!isMatch) {
+      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+    }
 
-    const provider = await prisma.provider.create({
-      data: { name, username, email, mobile, password: hashedPassword },
+    // ✅ Generate JWT token using the utility function
+    const token = await generateToken({ 
+      id: provider.id, 
+      username: provider.username,
+      role: 'PROVIDER'
     });
 
     // Remove password from response
     const { password: _, ...providerData } = provider;
 
     return NextResponse.json(
-      { message: "Signup successful", provider: providerData },
+      { message: "Login successful", token, provider: providerData },
       {
-        status: 201,
+        status: 200,
         headers: { "Access-Control-Allow-Origin": allowedOrigin },
       }
     );
   } catch (err) {
-    console.error("Signup error:", err);
+    console.error("Login error:", err);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }

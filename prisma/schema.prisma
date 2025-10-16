@@ -143,19 +143,45 @@ model Provider {
   id                  String             @id @default(auto()) @map("_id") @db.ObjectId
   registration_status RegistrationStatus @default(PENDING)
   name                String
+  username            String             @unique
   email               String             @unique
   mobile              String             @unique
+  password            String
   alternate_mobile    String?
-  address             String
+  address             String?
   cityId              String?            @db.ObjectId
   city                City?              @relation(fields: [cityId], references: [id])
-  stateId             String?             @db.ObjectId
-  state               State?              @relation(fields: [stateId], references: [id])
-  zipcode             String
+  stateId             String?            @db.ObjectId
+  state               State?             @relation(fields: [stateId], references: [id])
+  zipcode             String?
   mobileOTP           String?
   emailOTP            String?
   is_active           Boolean            @default(true)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
+  documents           ProviderDocument[]
 }
 
+model DocumentType {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  is_active     Boolean  @default(true)
+  forProviders  Boolean  @default(false)
+  forCustomers  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  providerDocuments ProviderDocument[]
+}
+
+model ProviderDocument {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  providerId      String       @db.ObjectId
+  documentTypeId  String       @db.ObjectId
+  fileUrl         String
+  verified        Boolean      @default(false)
+  uploadedAt      DateTime     @default(now())
+
+  provider        Provider     @relation(fields: [providerId], references: [id])
+  documentType    DocumentType @relation(fields: [documentTypeId], references: [id])
+}

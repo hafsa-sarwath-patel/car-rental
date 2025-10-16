@@ -4,6 +4,8 @@ import { generateUploadUrl } from "@/util/io";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3001";
+
 const s3 = new S3Client({
   region: process.env.DO_SPACES_REGION,
   endpoint: process.env.DO_SPACES_ENDPOINT.replace(/\/$/, ""),
@@ -18,7 +20,7 @@ export async function OPTIONS() {
   return NextResponse.json({}, {
     status: 200,
     headers: {
-      "Access-Control-Allow-Origin": "http://localhost:3001",
+      "Access-Control-Allow-Origin": allowedOrigin,
       "Access-Control-Allow-Methods": "POST, PUT, GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     },
@@ -37,7 +39,7 @@ export async function POST(req) {
 
     return NextResponse.json(
       { uploadUrl, fileUrl, key },
-      { headers: { "Access-Control-Allow-Origin": "http://localhost:3001" } }
+      { headers: { "Access-Control-Allow-Origin": allowedOrigin } }
     );
   } catch (err) {
     console.error(err);
@@ -59,7 +61,7 @@ export async function GET(req) {
 
     const url = await getSignedUrl(s3, command, { expiresIn: 300 });
     return NextResponse.json({ fileUrl: url }, {
-      headers: { "Access-Control-Allow-Origin": "http://localhost:3001" },
+      headers: { "Access-Control-Allow-Origin": allowedOrigin },
     });
   } catch (err) {
     console.error(err);
