@@ -14,22 +14,22 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+    
 
-    const { username, password, role } = body;
+    const { username, password } = body;
 
     // 2️⃣ Validate input
-    if (!username || !password ) {
+    if (!username || !password) {
       return NextResponse.json(
-        { message: "Username, password, and role are required", data: null },
+        { message: "Username and password are required", data: null },
         { status: 400 }
       );
     }
 
-    // 3️⃣ Find user in DB (match username + role)
+    // 3️⃣ Find user in DB by username only (auto-detect role)
     const user = await prisma.user.findFirst({
       where: {
-        username,
-        role
+        username
       }
     });
 
@@ -65,7 +65,7 @@ export async function POST(req) {
       maxAge: 24 * 60 * 60, // 1 day
     });
 
-    console.log("Login successful:", username, "Role:", role);
+    console.log("Login successful:", username, "Role:", user.role);
     return res;
 
   } catch (error) {

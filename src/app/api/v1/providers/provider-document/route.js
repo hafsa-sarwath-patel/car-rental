@@ -7,14 +7,14 @@ export async function POST(req) {
     const formData = await req.formData();
     const result = await documentService.upload(formData);
 
-    if (!result || result.statusCode !== 201) {
+    if (!result || result.statusCode !== 200) {
       return NextResponse.json(
         { error: result?.message || "Document upload failed" },
         { status: result?.statusCode || 400 }
       );
     }
 
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
     console.error("Provider document upload error:", error);
     return NextResponse.json(
