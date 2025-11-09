@@ -55,6 +55,7 @@ export default function AdminDashboard() {
     { title: "Settings", icon: "pi pi-cog", total: null, url: "/admin/settings" },
   ];
 
+  
   return (
     <div
       style={{

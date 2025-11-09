@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 // GET all brands
 export async function GET() {
   try {
-    const brands = await prisma.Brand.findMany({
+    const brands = await prisma.Brands.findMany({
       orderBy: { createdAt: "desc" },
     });
     return new Response(JSON.stringify(brands), { status: 200 });

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { generateUploadUrl } from "@/util/io";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-// import { generateUploadUrl} from "@/util/io";
+import { middleware } from '@/middleware';
 
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3001";
 
@@ -17,16 +17,8 @@ const s3 = new S3Client({
 });
 
 // OPTIONS → CORS
-export async function OPTIONS() {
-  return NextResponse.json({}, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": allowedOrigin,
-      "Access-Control-Allow-Methods": "POST, PUT, GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
-}
+
+
 
 // POST → generate signed PUT URL
 export async function POST(req) {
@@ -69,3 +61,4 @@ export async function GET(req) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+

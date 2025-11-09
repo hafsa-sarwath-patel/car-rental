@@ -2,11 +2,11 @@ import  prisma from "@/lib/prisma"
 
 export const providerDal = {
   async create(data) {
-    return prisma.provider.create({ data })
+    return prisma.providers.create({ data })
   },
 
   async findAll() {
-    const providers = await prisma.provider.findMany({
+    const providers = await prisma.providers.findMany({
       orderBy: { createdAt: 'desc' },
       // Don’t fail if city/state is missing
       include: {
@@ -22,25 +22,25 @@ export const providerDal = {
   }, 
 
   async findById(id) {
-    return prisma.provider.findUnique({
+    return prisma.providers.findUnique({
       where: { id },
       include: { city: true, state: true },
     })
   },
 
   async update(id, data) {
-    return prisma.provider.update({
+    return prisma.providers.update({
       where: { id },
       data,
     })
   },
 
   async remove(id) {
-    return prisma.provider.delete({ where: { id } })
+    return prisma.providers.delete({ where: { id } })
   },
 
   async existsByEmailOrMobile(email, mobile) {
-    return prisma.provider.findFirst({
+    return prisma.providers.findFirst({
       where: {
         OR: [{ email }, { mobile }],
       },
@@ -49,19 +49,19 @@ export const providerDal = {
   },
 
   async findByEmail(email) {
-    return prisma.provider.findUnique({
+    return prisma.providers.findUnique({
       where: { email },
     })
   },
 
   async findByMobile(mobile) {
-    return prisma.provider.findUnique({
+    return prisma.providers.findUnique({
       where: { mobile },
     })
   },
 
   async findByUsername(username) {
-    return prisma.provider.findUnique({
+    return prisma.providers.findUnique({
       where: { username },
     })
   },

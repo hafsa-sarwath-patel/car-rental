@@ -57,6 +57,44 @@ export const providerService = {
     };
   },
 
+  async verifyEmailOTP(email, otp) {
+    const provider = await providerDal.findByEmail(email);
+    if (!provider) {
+      return { statusCode: 404, message: 'Provider not found' };
+    }
+
+    if (provider.emailOTP !== otp) {
+      return { statusCode: 400, message: 'Invalid OTP' };
+    }
+
+    // Update registration status and clear the OTP after successful verification
+    await providerDal.update(provider.id, {
+      emailOTP: null,
+      registration_status: RegistrationStatus.EMAIL_VERIFIED,
+    });
+
+    return {
+      statusCode: 200,
+      message: 'Email verified successfully',
+    };
+  },
+
+  async sendMobileOTP(mobile) {
+    const provider = await providerDal.findByMobile(mobile);
+    if (!provider) {
+      return { statusCode: 404, message: 'Provider not found' };
+    }
+
+    const staticOTP = '123321';
+    await providerDal.update(provider.id, { mobileOTP: staticOTP });
+
+    return {
+      statusCode: 200,
+      message: 'OTP sent to mobile successfully',
+      otp: staticOTP, // Return for testing - remove in production
+    };
+  },
+
   async verifyMobileOTP(mobile, otp) {
     const provider = await providerDal.findByMobile(mobile);
     if (!provider) {
@@ -67,8 +105,11 @@ export const providerService = {
       return { statusCode: 400, message: 'Invalid OTP' };
     }
 
-    // Clear the OTP after successful verification
-    await providerDal.update(provider.id, { mobileOTP: null });
+    // Update registration status and clear the OTP after successful verification
+    await providerDal.update(provider.id, {
+      mobileOTP: null,
+      registration_status: RegistrationStatus.MOBILE_VERIFIED,
+    });
 
     return {
       statusCode: 200,

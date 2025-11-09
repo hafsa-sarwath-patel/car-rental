@@ -33,17 +33,17 @@ export async function POST(req) {
       return NextResponse.json({ message: "All fields are required" }, { status: 400 });
     }
 
-    const existing = await prisma.provider.findFirst({
-      where: { OR: [{ username }, { email }, { mobile }] },
+    const existing = await prisma.providers.findFirst({
+      where: { OR: [{ email }, { mobile }] },
     });
     if (existing) {
-      return NextResponse.json({ message: "Username, email, or mobile already exists" }, { status: 409 });
+      return NextResponse.json({ message: "Email or mobile already exists" }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const provider = await prisma.provider.create({
-      data: { name, username, email, mobile, password: hashedPassword },
+    const provider = await prisma.providers.create({
+      data: { provider_name: name, email, mobile },
     });
 
     // Remove password from response

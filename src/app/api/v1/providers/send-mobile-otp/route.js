@@ -3,16 +3,11 @@ import { providerService } from '@/server/services/providerService';
 
 export async function POST(req) {
   try {
-    const { email, otp } = await req.json();
-
-    if (!email || !otp) {
-      return NextResponse.json({ message: 'Email and OTP are required' }, { status: 400 });
-    }
-
-    const result = await providerService.verifyEmailOTP(email, otp);
+    const { mobile } = await req.json();
+    const result = await providerService.sendMobileOTP(mobile);
     return NextResponse.json(result, { status: result.statusCode });
   } catch (err) {
-    console.error('Email verification error:', err);
+    console.error('Send Mobile OTP Error:', err);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

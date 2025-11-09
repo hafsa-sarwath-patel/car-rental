@@ -33,8 +33,10 @@ export async function POST(req) {
       return NextResponse.json({ message: "Username and password required" }, { status: 400 });
     }
 
-    // ✅ Find provider by username
-    const provider = await prisma.provider.findUnique({ where: { username } });
+    // ✅ Find provider by username or email
+    const provider = await prisma.providers.findFirst({ 
+      where: { OR: [{ username: username }, { mobile: username }] } 
+    });
     if (!provider) {
       return NextResponse.json({ message: "Provider not found" }, { status: 404 });
     }

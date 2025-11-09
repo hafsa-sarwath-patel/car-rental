@@ -1,187 +1,314 @@
-// -----------------
-// Prisma Generator
-// -----------------
+
 generator client {
   provider = "prisma-client-js"
-  // output = "../src/lib/prisma"  // optional custom output path
 }
+// ==========================================
+// DATABASE CONFIGURATION
+// =========================================
 
-// -----------------
-// Database Source
-// -----------------
+
 datasource db {
   provider = "mongodb"
   url      = env("DB_URL")
 }
 
-
-enum Role {
-  ADMIN
-  USER
-  DRIVER
-  MECHANIC
-  PROVIDER
-  CUSTOMER
-}
-
-// -----------------
-// Core Models
-// -----------------
-
-
-model User {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  username    String   
-  email       String?      // ✅ Add this
-  password    String
-  role        Role
-  isAvailable Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-
-@@unique([username, email])
-
-}
-
-// Brand → Model → Variant hierarchy
-model Brand {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String   @unique
-  image     String?
-  isActive  Boolean  @default(true)
-  models    Model[]
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model Model {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String   @unique
-  brandId   String   @db.ObjectId
-  brand     Brand  @relation(fields: [brandId], references: [id])
-  variants  Variant[]
-  isActive  Boolean  @default(true)
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model Variant {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  modelId   String   @db.ObjectId
-  model     Model    @relation(fields: [modelId], references: [id])
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
-}
-
-model State {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  code      String
-  status    String  // or use enum Status { Active Inactive }
-  cities    City[]  // <-- inverse relation
-  providers   Provider[]  // <-- inverse relation
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model City {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  stateId   String  @db.ObjectId
-  status    String  // "Active" or "Inactive"
-  state     State   @relation(fields: [stateId], references: [id])
-  providers   Provider[]  // <-- inverse relation
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-
-
-// Checklist hierarchy
-model ChecklistCategory {
-  id          String             @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?            // <- add this line
-  options     ChecklistOption[]
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @updatedAt
-}
-
-model ChecklistOption {
-  id          String            @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?           // optional description
-  isActive    Boolean @default(true)  // active flag
-  categoryId  String            @db.ObjectId
-  category    ChecklistCategory @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @updatedAt
-}
-
-
-// Application settings
-model Setting {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  value     String
-  dataType  String
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+// ==========================================
+// ENUMS
+// ==========================================
+enum status {
+  ACTIVE
+  INACTIVE
 }
 
 enum RegistrationStatus {
   PENDING
-  PENDING_VERIFICATION
-  APPROVED
-  REJECTED
+  EMAIL_VERIFIED
+  MOBILE_VERIFIED
+  COMPLETED
 }
 
-model Provider {
-  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
-  registration_status RegistrationStatus @default(PENDING)
-  name                String
-  username            String             @unique
-  email               String             @unique
-  mobile              String             @unique
-  password            String
-  alternate_mobile    String?
+// ==========================================
+// CORE ENTITIES
+// ==========================================
+model users {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  username   String
+  password   String
+  email      String?
+  role       String
+  is_active  Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  customers  customers[]
+  providers  providers[]
+
+  @@unique([username, email])
+}
+
+model states {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  code      String
+  name      String
+  status    status   @default(ACTIVE)
+  cities    cities[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model cities {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  state_id  String   @db.ObjectId
+  code      String
+  name      String
+  state     states   @relation(fields: [state_id], references: [id], onDelete: Cascade)
+  providers providers[]
+  customers customers[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([state_id])
+}
+
+model brands {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  image     String?
+  models    models[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model models {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  brand_id  String   @db.ObjectId
+  brand     brands   @relation(fields: [brand_id], references: [id], onDelete: Cascade)
+  variants  variants[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brand_id])
+}
+
+model variants {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  model_id  String   @db.ObjectId
+  model     models   @relation(fields: [model_id], references: [id], onDelete: Cascade)
+  vehicles  vehicles[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([model_id])
+}
+
+// ==========================================
+// PROVIDERS & CUSTOMERS
+// ==========================================
+model providers {
+  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
+  user_id             String               @db.ObjectId
+  city_id             String               @db.ObjectId
+  provider_name      String
+  email               String?              @unique
+  mobile              String?              @unique
   address             String?
-  cityId              String?            @db.ObjectId
-  city                City?              @relation(fields: [cityId], references: [id])
-  stateId             String?            @db.ObjectId
-  state               State?             @relation(fields: [stateId], references: [id])
-  zipcode             String?
-  mobileOTP           String?
+  status              status               @default(ACTIVE)
+  registration_status RegistrationStatus   @default(PENDING)
   emailOTP            String?
-  is_active           Boolean            @default(true)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  documents           ProviderDocument[]
+  mobileOTP           String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  user                users                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  city                cities               @relation(fields: [city_id], references: [id], onDelete: Cascade)
+  vehicles            vehicles[]
+  provider_documents  provider_documents[]
+
+  @@index([user_id])
+  @@index([city_id])
 }
 
-model DocumentType {
+model customers {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_id     String   @db.ObjectId
+  city_id     String   @db.ObjectId
+  full_name   String
+  email       String?
+  mobile      String?
+  address     String?
+  status      status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  city        cities   @relation(fields: [city_id], references: [id], onDelete: Cascade)
+  bookings    vehicle_booking_info[]
+
+  @@index([user_id])
+  @@index([city_id])
+}
+
+// ==========================================
+// VEHICLES
+// ==========================================
+model vehicles {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  provider_id      String   @db.ObjectId
+  variant_id       String   @db.ObjectId
+  registration_no  String
+  rc_image         String? 
+  fuel_type        String
+  transmission     String
+  color            String?
+  seats            Int?
+  base_price       Float
+  per_km_rate      Float
+  status           status   @default(ACTIVE)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  provider         providers @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+  variant          variants  @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  bookings         vehicle_booking_info[]
+  vehicle_documents vehicle_documents[]
+  inspections      vehicle_inspection_details[]
+
+  @@index([provider_id])
+  @@index([variant_id])
+}
+
+// ==========================================
+// BOOKINGS
+// ==========================================
+model vehicle_booking_info {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  is_active     Boolean  @default(true)
-  forProviders  Boolean  @default(false)
-  forCustomers  Boolean  @default(false)
+  customer_id    String   @db.ObjectId
+  vehicle_id     String   @db.ObjectId
+  driver_name    String?
+  pickup_date    DateTime
+  drop_date      DateTime
+  pickup_location String
+  drop_location  String
+  total_amount   Float
+  payment_status String
+  status         status   @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       customers @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  vehicle        vehicles  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  payment        vehicle_payment_info?
+
+  @@index([customer_id])
+  @@index([vehicle_id])
+}
+
+// ==========================================
+// PAYMENTS
+// ==========================================
+model vehicle_payment_info {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  booking_id       String   @unique @db.ObjectId
+  transaction_id   String?
+  payment_mode     String?
+  amount_paid      Float
+  payment_date     DateTime @default(now())
+  status           status   @default(ACTIVE)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  booking          vehicle_booking_info @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// DOCUMENTS
+// ==========================================
+model provider_documents {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  provider_id   String   @db.ObjectId
+  document_name String
+  document_url  String
+  verified      Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  providerDocuments ProviderDocument[]
+  provider      providers @relation(fields: [provider_id], references: [id], onDelete: Cascade)
 }
 
-model ProviderDocument {
-  id              String       @id @default(auto()) @map("_id") @db.ObjectId
-  providerId      String       @db.ObjectId
-  documentTypeId  String       @db.ObjectId
-  fileUrl         String
-  verified        Boolean      @default(false)
-  uploadedAt      DateTime     @default(now())
+model vehicle_documents {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  vehicle_id    String   @db.ObjectId
+  document_name String
+  document_url  String
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  provider        Provider     @relation(fields: [providerId], references: [id])
-  documentType    DocumentType @relation(fields: [documentTypeId], references: [id])
+  vehicle       vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
 }
+
+// ==========================================
+// INSPECTION
+// ==========================================
+model vehicle_inspection_details {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  vehicle_id        String   @db.ObjectId
+  inspection_date   DateTime @default(now())
+  overall_status    String?
+  remarks           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  vehicle           vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  inspection_parent inspection_parent[]
+
+  @@index([vehicle_id])
+}
+
+model inspection_parent {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  inspection_id      String   @db.ObjectId
+  category_id        String   @db.ObjectId
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  inspection         vehicle_inspection_details @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
+  category           checklist_categories       @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  inspection_options inspection_option[]
+
+  @@index([inspection_id])
+  @@index([category_id])
+}
+
+model checklist_categories {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  status     status   @default(ACTIVE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  inspections inspection_parent[]
+  options     inspection_option[]
+}
+
+model inspection_option {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  parent_id    String   @db.ObjectId
+  category_id  String   @db.ObjectId
+  option_name  String
+  is_ok        Boolean  @default(false)
+  remarks      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parent       inspection_parent    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  category     checklist_categories @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@index([parent_id])
+  @@index([category_id])
+}
+
+
+
+

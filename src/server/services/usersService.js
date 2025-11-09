@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs";
 export const listUsers = (page, limit) => userDal.getUsers({ page, limit });
 
 export const registerUser = async (user) => {
-  // example: hash password before sending to DAL
   const hashedPassword = await bcrypt.hash(user.password, 10);
-  return userDal.createUser({ ...user, password: hashedPassword });
+  const { name, ...userData } = user;
+  return userDal.createUser({ ...userData, password: hashedPassword });
 };
 
 // add update/remove if you need them
@@ -18,3 +18,4 @@ export const modifyUser = async (id, data) => {
   }
   return userDal.updateUser(id, updateData);
 };
+
