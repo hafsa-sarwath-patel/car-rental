@@ -3,9 +3,9 @@ import { RegistrationStatus } from '@prisma/client';
 import { generateOTP } from '@/server/utils/otp';
 import { sendEmail } from '@/server/utils/email';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your_secret_key');
 
 export const providerService = {
   async register(payload) {
@@ -50,11 +50,10 @@ export const providerService = {
       return { statusCode: 401, message: 'Invalid credentials' };
     }
 
-    const token = jwt.sign(
-      { id: provider.id, username: provider.username, email: provider.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = await new SignJWT({ id: provider.id, username: provider.username, email: provider.email })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(JWT_SECRET);
 
     const { password: _, ...providerData } = provider;
 
