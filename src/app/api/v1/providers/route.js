@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { providerService } from '@/server/services/providerService';
 
-const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3001";
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3001';
 
 export async function OPTIONS() {
   return NextResponse.json(
@@ -10,54 +9,66 @@ export async function OPTIONS() {
     {
       status: 200,
       headers: {
-        "Access-Control-Allow-Origin": allowedOrigin,
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     }
   );
 }
 
+export async function GET(req) {
+  try {
+    const origin = req.headers.get('origin');
+    if (origin && origin !== allowedOrigin) {
+      return NextResponse.json({ message: 'CORS blocked' }, { status: 403 });
+    }
+
+    const providers = await providerService.list();
+    return NextResponse.json(providers, {
+      status: 200,
+      headers: { 'Access-Control-Allow-Origin': allowedOrigin },
+    });
+  } catch (err) {
+    console.error('List providers error:', err);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(req) {
   try {
-    const origin = req.headers.get("origin");
-    // Only check CORS if origin header is present
+    const origin = req.headers.get('origin');
     if (origin && origin !== allowedOrigin) {
-      return NextResponse.json({ message: "CORS blocked" }, { status: 403 });
+      return NextResponse.json({ message: 'CORS blocked' }, { status: 403 });
     }
 
     const body = await req.json();
     const { name, username, email, mobile, password } = body;
 
     if (!name || !username || !email || !mobile || !password) {
-      return NextResponse.json({ message: "All fields are required" }, { status: 400 });
+      return NextResponse.json(
+        { message: 'All fields are required' },
+        { status: 400 }
+      );
     }
 
-    const existing = await prisma.providers.findFirst({
-      where: { OR: [{ email }, { mobile }] },
+    const result = await providerService.register({
+      name,
+      username,
+      email,
+      mobile,
+      password,
     });
-    if (existing) {
-      return NextResponse.json({ message: "Email or mobile already exists" }, { status: 409 });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const provider = await prisma.providers.create({
-      data: { provider_name: name, email, mobile },
-    });
-
-    // Remove password from response
-    const { password: _, ...providerData } = provider;
 
     return NextResponse.json(
-      { message: "Signup successful", provider: providerData },
+      { message: result.message },
       {
-        status: 201,
-        headers: { "Access-Control-Allow-Origin": allowedOrigin },
+        status: result.statusCode,
+        headers: { 'Access-Control-Allow-Origin': allowedOrigin },
       }
     );
   } catch (err) {
-    console.error("Signup error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    console.error('Registration error:', err);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
